@@ -16,10 +16,10 @@ sub DumpScreenRegList
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $mesg = Cdk::checkReq ("($name) Missing 'Mesg' value.", $params{'Mesg'});
+   my $mesg = Cdk::checkReq ("($name) Missing 'Message' value.", $params{'Message'});
 
    # Call the thing.
-   Cdk::Debug::DumpScreenRegList ($params{'Mesg'}, $mesg);
+   Cdk::Debug::DumpScreenRegList ($params{'Message'}, $mesg);
 }
 
 1;

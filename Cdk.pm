@@ -10,7 +10,7 @@ require AutoLoader;
 select (STDIN); $| = 1 ;
 
 # Set the version.
-$VERSION = "4.8";
+$VERSION = "4.9.1";
 
 # Set the diag flag off.
 $DIAGFLAG = 0;
@@ -25,19 +25,16 @@ sub AUTOLOAD {
     # XS function.  If a constant is not found then control is passed
     # to the AUTOLOAD in AutoLoader.
 
-    local($constname);
+    my $constname;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-
-    $val = constant($constname, @_ ? $_[0] : 0);
-
+    my $val = constant($constname, @_ ? $_[0] : 0);
     if ($! != 0) {
 	if ($! =~ /Invalid/) {
 	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
 	    goto &AutoLoader::AUTOLOAD;
 	}
 	else {
-	    ($pack,$file,$line) = caller;
-	    die "Your vendor has not defined Cdk macro $constname, used at $file line $line.";
+		die "Your vendor has not defined Cdk macro $constname";
 	}
     }
     eval "sub $AUTOLOAD { $val }";
@@ -60,7 +57,7 @@ sub drawMesg
    $self->{'Type'}      = $type;
    
    # Set up the parameters passed in.
-   $mesg	= Cdk::checkReq ($name, "Mesg",   $params{'Mesg'});
+   $mesg	= Cdk::checkReq ($name, "Message",   $params{'Message'});
    $xpos	= Cdk::checkDef ($name, "Xpos",   $params{'Xpos'},   Cdk::CENTER());
    $ypos	= Cdk::checkDef ($name, "Ypos",   $params{'Ypos'},   Cdk::CENTER());
    $attrib	= Cdk::checkDef ($name, "Attrib", $params{'Attrib'}, Cdk::A_NORMAL());
@@ -134,7 +131,7 @@ sub popupLabel
 {
    my $mesg = shift;
  
-   my $popup = new Cdk::Label ("Mesg" => $mesg);
+   my $popup = new Cdk::Label ("Message" => $mesg);
    $popup->draw();
    $popup->wait();
 }
@@ -146,7 +143,7 @@ sub popupDialog
 {
    my ($mesg, $buttons) = @_;
  
-   my $popup = new Cdk::Dialog ('Mesg' => $mesg, 'Buttons' => $buttons);
+   my $popup = new Cdk::Dialog ('Message' => $mesg, 'Buttons' => $buttons);
    return $popup->activate;
 }
 
@@ -186,28 +183,29 @@ sub scalar2List
 # 
 # Load the object modules.
 #
-use Cdk::Label;
-use Cdk::Entry;
-use Cdk::Mentry;
-use Cdk::Dialog;
-use Cdk::Histogram;
-use Cdk::Scroll;
-use Cdk::Menu;
-use Cdk::Matrix;
-use Cdk::Scale;
-use Cdk::Selection;
-use Cdk::Marquee;
-use Cdk::Viewer;
-use Cdk::Graph;
-use Cdk::Radio;
-use Cdk::Diag;
-use Cdk::Template;
-use Cdk::Swindow;
-use Cdk::Itemlist;
-use Cdk::Fselect;
-use Cdk::Slider;
 use Cdk::Alphalist;
+use Cdk::Buttonbox;
 use Cdk::Calendar;
+use Cdk::Diag;
+use Cdk::Dialog;
+use Cdk::Entry;
+use Cdk::Fselect;
+use Cdk::Graph;
+use Cdk::Histogram;
+use Cdk::Itemlist;
+use Cdk::Label;
+use Cdk::Marquee;
+use Cdk::Matrix;
+use Cdk::Mentry;
+use Cdk::Menu;
+use Cdk::Radio;
+use Cdk::Scale;
+use Cdk::Scroll;
+use Cdk::Selection;
+use Cdk::Slider;
+use Cdk::Swindow;
+use Cdk::Template;
+use Cdk::Viewer;
 
 1;
 __END__

@@ -11,7 +11,9 @@ use Cdk;
 Cdk::init();
 
 # Create a new entry object.
-my $entry = new Cdk::Entry ('Label' => "Type Anything:",
+my $title = ["", "Type in anything but the dreaded letter 'G'!", ""];
+my $entry = new Cdk::Entry ('Label' => "Type Anything: ",
+				'Title' => $title,
 				'Width' => 20,
 				'Min' => 0,
 				'Max' => 256);
@@ -44,11 +46,10 @@ sub preProcessCB
    my ($input, $entry) = @_;
 
    # Check the letter.
-   if ($input eq "g")
+   if (uc $input eq "G")
    {
       Cdk::Beep();
-      popupLabel (["<C>Sorry, this entry field widget",
-			"<C>will not accept the letter g"]);
+      popupLabel (["<C>I Told You </B>NOT<!B> To Do That"]);
       $entry->draw();
       return 0;
    }

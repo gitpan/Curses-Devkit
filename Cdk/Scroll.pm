@@ -16,22 +16,23 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $title = Cdk::checkReq ($name, "Title", $params{'Title'});
-   my $list = Cdk::checkReq ($name, "List", $params{'List'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $numbers = Cdk::checkDef ($name, "Numbers", $params{'Numbers'}, "FALSE");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $list	= Cdk::checkReq ($name, "List", $params{'List'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $spos	= Cdk::checkDef ($name, "Spos", $params{'Spos'}, "NONE");
+   my $numbers	= Cdk::checkDef ($name, "Numbers", $params{'Numbers'}, "FALSE");
+   my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Scroll::New ($title,
-					$params{'List'},
-					$height, $width, $xpos, $ypos,
-					$numbers, $highlight,
+   $self->{'Me'} = Cdk::Scroll::New ($title, $params{'List'},
+					$height, $width,
+					$xpos, $ypos, $spos,
+					$numbers, $hlight,
 					$box, $shadow);
    bless $self;
 }
@@ -153,14 +154,14 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Scroll::Draw ($self->{'Me'}, $box);
 }
 
 #
-# This sets certain attributes of the scrolling list.
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -168,13 +169,53 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set the required values.
-   my $list = Cdk::checkReq ($name, "List", $params{'List'});
-   my $number = Cdk::checkDef ($name, "Numbers", $params{'Numbers'}, "FALSE");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   Cdk::Scroll::Set ($self->{'Me'}, $params{'List'}, $number, $highlight, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Items'})
+   {
+      Cdk::Scroll::SetItems ($self->{'Me'}, $params{'Items'});
+   }
+   if (defined $params{'Highlight'})
+   {
+      Cdk::Scroll::SetHighlight ($self->{'Me'}, $params{'Highlight'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Scroll::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Scroll::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Scroll::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Scroll::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Scroll::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Scroll::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Scroll::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Scroll::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Scroll::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #

@@ -25,16 +25,17 @@ stand for?'. In response I say : (fanfare please)
 
 <C></B/U>Curses Development Kit<!B!U>
 
-There are currently 21 widgets available in Cdk, with more coming. What they 
+There are currently 22 widgets available in Cdk, with more coming. What they 
 are and what they do is in the following table.
 
 <C><#UL><#HL(13)><#TT><#HL(51)><#UR>
 <C><#VL></R> Widget Name  <!R></U><#VL><!U></R>Purpose                                             <!R><#VL>
 <C><#VL>Alphalist     <#VL>Provides a list of words which the user can select  <#VL>
-<C><#VL></U>              <#VL>from. Allows you to narrow the seach by entering    <!U><#VL>
-<C><#VL></U>              <#VL>a few initial characters of thw words being         <!U><#VL>
+<C><#VL>              <#VL>from. Allows you to narrow the seach by entering    <#VL>
+<C><#VL>              <#VL>a few initial characters of thw words being         <#VL>
 <C><#VL></U>              <#VL>sought after to narrow the search.                  <!U><#VL>
-<C><#VL>Calendar      <#VL>Creates a simple calendar widget.                   <#VL>
+<C><#VL></U>Buttonbox     <#VL>Creates a widget with numerous buttons.             <!U><#VL>
+<C><#VL></U>Calendar      <#VL>Creates a simple calendar widget.                   <!U><#VL>
 <C><#VL>Dialog        <#VL>Prompts the user with a message, and the user       <#VL>
 <C><#VL></U>              <#VL>can pick an answer from the buttons provided.       <!U><#VL>
 <C><#VL></U>Entry         <#VL>Allows the user to enter information.               <!U><#VL>
@@ -100,3 +101,4 @@ ttfn,
 <C>Document Revised: November, 1995
 <C>Document Revised: January,  1996
 <C>Document Revised: June,     1996
+<C>Document Revised: April,    1997

@@ -16,22 +16,24 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $title = Cdk::checkReq ($name, "Title", $params{'Title'});
-   my $list = Cdk::checkReq ($name, "List", $params{'List'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $choicechar = Cdk::checkDef ($name, "Choice", $params{'Choice'}, "X");
-   my $defaultitem = Cdk::checkDef ($name, "Default", $params{'Default'}, 0);
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $list	= Cdk::checkReq ($name, "List", $params{'List'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $spos	= Cdk::checkDef ($name, "Spos", $params{'Spos'}, "NONE");
+   my $choice	= Cdk::checkDef ($name, "Choice", $params{'Choice'}, "X");
+   my $default	= Cdk::checkDef ($name, "Default", $params{'Default'}, 0);
+   my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
    $self->{'Me'} = Cdk::Radio::New ($title, $params{'List'},
-					$height, $width, $xpos, $ypos,
-					$choicechar, $defaultItem, $highlight,
+					$height, $width,
+					$xpos, $ypos, $spos,
+					$choice, $default, $hlight,
 					$box, $shadow);
    bless $self;
 }
@@ -116,7 +118,7 @@ sub postProcess
 }
 
 #
-# This sets some characteristics of the radio list.
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -124,13 +126,61 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $highlight = Cdk::checkReq ($name, "Highlight", $params{'Highlight'});
-   my $choice = Cdk::checkReq ($name, "Choice", $params{'Choice'});
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
-   
-   # Draw the object.
-   Cdk::Radio::Set ($self->{'Me'}, $highlight, $choice, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Highlight'})
+   {
+      Cdk::Radio::SetHighlight ($self->{'Me'}, $params{'Highlight'});
+   }
+   if (defined $params{'Choice'})
+   {
+      Cdk::Radio::SetChoiceCharacter ($self->{'Me'}, $params{'Choice'});
+   }
+   if (defined $params{'LeftBrace'})
+   {
+      Cdk::Radio::SetLeftBrace ($self->{'Me'}, $params{'LeftBrace'});
+   }
+   if (defined $params{'RightBrace'})
+   {
+      Cdk::Radio::SetRightBrace ($self->{'Me'}, $params{'RightBrace'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Radio::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Radio::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Radio::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Radio::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Radio::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Radio::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Radio::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Radio::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Radio::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -143,7 +193,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Radio::Draw ($self->{'Me'}, $box);

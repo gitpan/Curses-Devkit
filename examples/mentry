@@ -16,7 +16,7 @@ Cdk::init();
 
 # Create the multi-line entry object.
 $mentry	= new Cdk::Mentry ('Label' => "</5>Filename: ",
-				'Fwidth' => 20,
+				'Width' => 20,
 				'Prows' => 5,
 				'Lrows' => 10);
 

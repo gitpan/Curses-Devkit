@@ -16,31 +16,34 @@ sub new
    $self->{'Type'} = $type;
    
    # Set up the parameters passed in.
-   my $rowtitles = Cdk::checkReq ($name, "Rowtitles", $params{'Rowtitles'});
-   my $coltitles = Cdk::checkReq ($name, "Coltitles", $params{'Coltitles'});
-   my $colwidths = Cdk::checkReq ($name, "Colwidths", $params{'Colwidths'});
-   my $colvalues = Cdk::checkReq ($name, "Coltypes",  $params{'Coltypes'});
-   my $vrows = Cdk::checkReq ($name, "Vrows", $params{'Vrows'});
-   my $vcols = Cdk::checkReq ($name, "Vcols", $params{'Vcols'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $rowspace = Cdk::checkDef ($name, "Rowspace", $params{'Rowspace'}, 1);
-   my $colspace = Cdk::checkDef ($name, "Colspace", $params{'Colspace'}, 1);
-   my $filler = Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
+   my $rowtitles = Cdk::checkReq ($name, "RowTitles", $params{'RowTitles'});
+   my $coltitles = Cdk::checkReq ($name, "ColTitles", $params{'ColTitles'});
+   my $colwidths = Cdk::checkReq ($name, "ColWidths", $params{'ColWidths'});
+   my $coltypes	= Cdk::checkReq ($name, "ColTypes",  $params{'ColTypes'});
+   my $vrows	= Cdk::checkReq ($name, "Vrows", $params{'Vrows'});
+   my $vcols	= Cdk::checkReq ($name, "Vcols", $params{'Vcols'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $rowSpace	= Cdk::checkDef ($name, "RowSpace", $params{'RowSpace'}, 1);
+   my $colSpace	= Cdk::checkDef ($name, "ColSpace", $params{'ColSpace'}, 1);
+   my $filler	= Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
    my $dominant = Cdk::checkDef ($name, "Dominant", $params{'Dominant'}, "NONE");
-   my $boxCell = Cdk::checkDef ($name, "Boxcell", $params{'Boxcell'}, "TRUE");
-   my $boxMatrix = Cdk::checkDef ($name, "Boxmatrix", $params{'Boxmatrix'}, "FALSE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $box	= Cdk::checkDef ($name, "BoxMatrix", $params{'BoxMatrix'}, "FALSE");
+   my $boxCell	= Cdk::checkDef ($name, "BoxCell", $params{'BoxCell'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Matrix::New ($params{'Rowtitles'},
-					$params{'Coltitles'},
-					$params{'Colwidths'},
-					$params{'Coltypes'},
-					$vrows, $vcols, $xpos, $ypos,
-					$rowspace, $colspace,
+   $self->{'Me'} = Cdk::Matrix::New ($title, 
+					$params{'RowTitles'},
+					$params{'ColTitles'},
+					$params{'ColWidths'},
+					$params{'ColTypes'},
+					$vrows, $vcols,
+					$xpos, $ypos,
+					$rowSpace, $colSpace,
 					$filler, $dominant,
-					$boxCell, $boxMatrix, $shadow);
+					$boxCell, $box, $shadow);
    bless $self;
 }
 
@@ -73,19 +76,61 @@ sub inject
 }
 
 #
-# This allows the user to set the matrix values on startup/or change the values.
+# This sets several parameters of the widget.
 #
 sub set
 {
-   my $self		= shift;
-   my %params		= @_;
-   my $name		= "$self->{'Type'}::set";
+   my $self	= shift;
+   my %params	= @_;
+   my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $mvalues = Cdk::checkReq ($name, "Values", $params{'Values'});
-
-   # Call the function that does this.
-   return (Cdk::Matrix::Set ($self->{'Me'}, $params{'Values'}));
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Values'})
+   {
+      Cdk::Matrix::Set ($self->{'Me'}, $params{'Values'});
+   }
+   if (defined $params{'Cell'})
+   {
+      Cdk::Matrix::SetCell ($self->{'Me'}, $params{'Row'}, $params{'Col'}, $params{'Value'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Matrix::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Matrix::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Matrix::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Matrix::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Matrix::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Matrix::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Matrix::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Matrix::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Matrix::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -122,7 +167,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Matrix::Draw ($self->{'Me'}, $box);

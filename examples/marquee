@@ -17,7 +17,7 @@ my $message = "</5>Hello there</K>!!!<!K> How are you today?<!5> ";
 my $marquee = new Cdk::Marquee ('Width' => 20);
 
 # Activate the marquee object.
-$marquee->activate ('Mesg' => $message,
+$marquee->activate ('Message' => $message,
 			'Delay' => 3, 
 			'Repeat' => 3);
 

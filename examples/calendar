@@ -11,7 +11,7 @@ use Cdk;
 Cdk::init();
 
 # Create the celendar object.
-my $calendar = new Cdk::Calendar ('Highlight' => "A_REVERSE");
+my $calendar = new Cdk::Calendar ();
 
 # Activate the object.
 my $ret = $calendar->activate();

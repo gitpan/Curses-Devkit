@@ -64,7 +64,7 @@ for (;;)
 		"Home Directory : </R>$dir",
 		"Shell          : </R>$shell"];
 
-   my $title = new Cdk::Label ('Mesg' => $info);
+   my $title = new Cdk::Label ('Message' => $info);
  
    # Draw the label.
    $title->draw ('Box' => "TRUE");

@@ -16,16 +16,16 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $menulist = Cdk::checkReq ($name, "Menulist", $params{'Menulist'});
-   my $menuloc = Cdk::checkReq ($name, "Menuloc", $params{'Menuloc'});
-   my $menuPos = Cdk::checkDef ($name, "Menupos", $params{'Menupos'}, "TOP");
-   my $titleattr = Cdk::checkDef ($name, "Tattrib", $params{'Tattrib'}, "A_REVERSE");
-   my $subtitleattr = Cdk::checkDef ($name, "SubTattrib", $params{'SubTattrib'}, "A_REVERSE");
+   my $menuList		= Cdk::checkReq ($name, "Menulist", $params{'Menulist'});
+   my $menuLoc		= Cdk::checkReq ($name, "Menuloc", $params{'Menuloc'});
+   my $menuPos		= Cdk::checkDef ($name, "Menupos", $params{'Menupos'}, "TOP");
+   my $titleAttr	= Cdk::checkDef ($name, "Tattrib", $params{'Tattrib'}, "A_REVERSE");
+   my $subTitleAttr	= Cdk::checkDef ($name, "SubTattrib", $params{'SubTattrib'}, "A_REVERSE");
 
    # Create the thing.
    $self->{'Me'} = Cdk::Menu::New ($params{'Menulist'},
 					$params{'Menuloc'},
-					$titleattr, $subtitleattr, $menuPos);
+					$titleAttr, $subTitleAttr, $menuPos);
    bless $self;
 }
 
@@ -77,24 +77,34 @@ sub inject
 }
 
 #
-# This sets the value in the menu widget.
+# This sets several parameters of the widget.
 #
 sub set
 {
    my $self	= shift;
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
- 
-   # Set the values.
-   my $menu = Cdk::checkDef ($name, "Menu", $params{'Menu'}, 0);
-   my $submenu = Cdk::checkDef ($name, "Submenu", $params{'Submenu'}, 0);
-   my $menuattr = Cdk::checkDef ($name, "Menuattr", $params{'Menuattr'}, "A_REVERSE");
-   my $submenuattr = Cdk::checkDef ($name, "Submenuattr", $params{'Submenuattr'}, "A_REVERSE");
- 
-   # Call the method.
-   Cdk::Menu::Set ($self->{'Me'}, $menu, $submenu, $menuattr, $submenuattr);
-}
 
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'CurrentItem'})
+   {
+      Cdk::Menu::SetCurrentItem ($self->{'Me'}, $params{'CurrentItem'});
+   }
+   if (defined $params{'TitleHighlight'})
+   {
+      Cdk::Menu::SetTitleHighlight ($self->{'Me'}, $params{'TitleHighlight'});
+   }
+   if (defined $params{'SubTitleHighlight'})
+   {
+      Cdk::Menu::SetSubTitleHighlight ($self->{'Me'}, $params{'SubTitleHighlight'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Menu::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+}
 #
 # This draws the object.
 #

@@ -16,22 +16,23 @@ sub new
    $self->{'Type'} = $type;
    
    # Set up the parameters passed in.
-   my $label = Cdk::checkReq ($name, "Label", $params{'Label'});
-   my $list = Cdk::checkReq ($name, "List", $params{'List'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $filler = Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $list	= Cdk::checkReq ($name, "List", $params{'List'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $label	= Cdk::checkDef ($name, "Label", $params{'Label'}, "");
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $hBar	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $filler	= Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Alphalist::New ($label, $params{'List'},
+   $self->{'Me'} = Cdk::Alphalist::New ($title, $label, $params{'List'},
 					$height, $width, $xpos, $ypos,
-					$highlight, $filler, $box, $shadow);
-   bless  $self;
+					$hBar, $filler, $box, $shadow);
+   bless $self;
 }
 
 #
@@ -56,7 +57,7 @@ sub activate
 }
 
 #
-# This sets the value in the entry field.
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -64,16 +65,58 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set the values.
-   my $list = Cdk::checkReq ($name, "List", $params{'List'});
-   my $filler = Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   # Call the method.
-   Cdk::Alphalist::Set ($self->{'Me'}, $list, $filler, $highlight, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Contents'})
+   {
+      Cdk::Alphalist::SetContents ($self->{'Me'}, $params{'Contents'});
+   }
+   if (defined $params{'FillerChar'})
+   {
+      Cdk::Alphalist::SetFillerChar ($self->{'Me'}, $params{'FillerChar'});
+   }
+   if (defined $params{'Highlight'})
+   {
+      Cdk::Alphalist::SetHighlight ($self->{'Me'}, $params{'Highlight'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Alphalist::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Alphalist::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Alphalist::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Alphalist::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Alphalist::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Alphalist::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Alphalist::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Alphalist::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Alphalist::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
-
 #
 # This allows us to bind a key to an action.
 #
@@ -127,7 +170,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set the values.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Alphalist::Draw ($self->{'Me'}, $box);

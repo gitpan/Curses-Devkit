@@ -36,14 +36,17 @@ sub callback
 }
 
 # Create a new entry object.
-$filename = new Cdk::Entry ('Label' => "Filename:",
+my $title = ["", "<C>Type in a filename or",
+		"<C>Press </B>?<!B> to get a list.", ""];
+$filename = new Cdk::Entry ('Label' => "Filename: ",
+				'Title' => $title,
 				'Width' => 20,
 				'Min' => 0,
 				'Max' => 256);
 
 # Create a key binding.
 my @mesg = ("<C>Hi Mike", "<C></U>How Are You?");
-$filename->bind ('Key' => '?', 'Function' => sub {main::callback ($filename);});
+$filename->bind ('Key' => "KEY_TAB", 'Function' => sub {main::callback ($filename);});
 
 # Activate the object.
 my $file = $filename->activate();

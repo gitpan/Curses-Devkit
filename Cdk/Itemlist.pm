@@ -16,22 +16,20 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $label = Cdk::checkReq ($name, "Label", $params{'Label'});
-   my $info = Cdk::checkReq ($name, "List", $params{'List'});
-   my $default = Cdk::checkDef ($name, 'Default', $params{'Default'}, 0);
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $lpos = Cdk::checkDef ($name, "Lpos", $params{'Lpos'}, "LEFT");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $info	= Cdk::checkReq ($name, "List", $params{'List'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $label	= Cdk::checkDef ($name, "Label", $params{'Label'}, "");
+   my $default	= Cdk::checkDef ($name, 'Default', $params{'Default'}, 0);
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Itemlist::New ($params{'Label'},
-					$params{'List'},
-					$default,
-					$xpos, $ypos, $lpos,
+   $self->{'Me'} = Cdk::Itemlist::New ($title, $label, $params{'List'},
+					$default, $xpos, $ypos,
 					$box, $shadow);
-   bless  $self;
+   bless $self;
 }
 
 #
@@ -71,7 +69,7 @@ sub inject
 }
 
 #
-# This sets the value in the entry field.
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -79,13 +77,57 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set the values.
-   my $value = Cdk::checkReq ($name, "List", $params{'List'});
-   my $default = Cdk::checkDef ($name, 'Default', $params{'Default'}, 0);
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   # Call the method.
-   Cdk::Itemlist::Set ($self->{'Me'}, $params{'List'}, $default, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Values'})
+   {
+      Cdk::Itemlist::SetValues ($self->{'Me'}, $params{'Values'});
+   }
+   if (defined $params{'DefaultItem'})
+   {
+      Cdk::Itemlist::SetDefaultItem ($self->{'Me'}, $params{'DefaultItem'});
+   }
+   if (defined $params{'CurrentItem'})
+   {
+      Cdk::Itemlist::SetCurrentItem ($self->{'Me'}, $params{'CurrentItem'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Itemlist::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Itemlist::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Itemlist::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Itemlist::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Itemlist::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Itemlist::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Itemlist::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Itemlist::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Itemlist::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -150,7 +192,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set the values.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Itemlist::Draw ($self->{'Me'}, $box);

@@ -15,26 +15,26 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $label = Cdk::checkReq ($name, "Label", $params{'Label'});
-   my $low = Cdk::checkReq ($name, "Low", $params{'Low'});
-   my $high = Cdk::checkReq ($name, "High", $params{'High'});
-   my $width = Cdk::checkDef ($name, "Width", $params{'Width'}, $numWidth);
-   my $inc = Cdk::checkDef ($name, "Inc", $params{'Inc'}, 1);
-   my $fastinc = Cdk::checkDef ($name, "Fastinc", $params{'Fastinc'}, 5);
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $lpos = Cdk::checkDef ($name, "Lpos", $params{'Lpos'}, "LEFT");
-   my $start = Cdk::checkDef ($name, "Start", $params{'Start'}, $params{'Low'});
-   my $fieldattr = Cdk::checkDef ($name, "Fattrib", $params{'Fattrib'}, "A_NORMAL");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $low	= Cdk::checkReq ($name, "Low", $params{'Low'});
+   my $high	= Cdk::checkReq ($name, "High", $params{'High'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $label	= Cdk::checkDef ($name, "Label", $params{'Label'}, "");
+   my $width	= Cdk::checkDef ($name, "Width", $params{'Width'}, $numWidth);
+   my $inc	= Cdk::checkDef ($name, "Inc", $params{'Inc'}, 1);
+   my $fastInc	= Cdk::checkDef ($name, "Fastinc", $params{'Fastinc'}, 5);
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $start	= Cdk::checkDef ($name, "Start", $params{'Start'}, $params{'Low'});
+   my $fAttr	= Cdk::checkDef ($name, "Fattrib", $params{'Fattrib'}, "A_NORMAL");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Scale::New ($label,
+   $self->{'Me'} = Cdk::Scale::New ($title, $label,
 					$start, $low,
-					$high, $inc, $fastinc,
-					$width, $xpos, $ypos, $lpos,
-					$fieldattr, $box, $shadow);
+					$high, $inc, $fastInc,
+					$width, $xpos, $ypos,
+					$fAttr, $box, $shadow);
    bless $self;
 }
 
@@ -127,7 +127,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Scale::Draw ($self->{'Me'}, $box);
@@ -143,7 +143,7 @@ sub erase
 }
 
 #
-# This sets the object...
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -151,13 +151,53 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $low = Cdk::checkReq ($name, "Low", $params{'Low'});
-   my $high = Cdk::checkReq ($name, "High", $params{'High'});
-   my $value = Cdk::checkReq ($name, "Value", $params{'Value'});
-   my $box= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   Cdk::Scale::Set ($self->{'Me'}, $low, $high, $value, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Value'})
+   {
+      Cdk::Scale::SetValue ($self->{'Me'}, $params{'Value'});
+   }
+   if (defined $params{'Low'})
+   {
+      Cdk::Scale::SetLowHigh ($self->{'Me'}, $params{'Low'}, $params{'High'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Scale::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Scale::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Scale::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Scale::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Scale::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Scale::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Scale::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Scale::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Scale::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #

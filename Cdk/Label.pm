@@ -16,19 +16,19 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $mesg = Cdk::checkReq ($name, "Mesg", $params{'Mesg'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $mesg	= Cdk::checkReq ($name, "Message", $params{'Message'});
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Label::New ($params{'Mesg'}, $ypos, $xpos, $box, $shadow);
-   bless  $self;
+   $self->{'Me'} = Cdk::Label::New ($params{'Message'}, $ypos, $xpos, $box, $shadow);
+   bless $self;
 }
 
 #
-# This creates a new Label object
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -36,11 +36,49 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $mesg = Cdk::checkReq ($name, "Mesg", $params{'Mesg'});
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
-
-   Cdk::Label::Set ($self->{'Me'}, $mesg, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Message'})
+   {
+      Cdk::Label::SetMessage ($self->{'Me'}, $params{'Message'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Label::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Label::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Label::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Label::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Label::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Label::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Label::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Label::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Label::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
    
 #
@@ -53,7 +91,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
 
    # Draw the object.
    Cdk::Label::Draw ($self->{'Me'}, $box);

@@ -11,15 +11,17 @@ use Cdk;
 Cdk::init();
 
 # Set up the label rows.
-my @mesg = ("This is a test of the Perl Cdk extension.",
+my @mesg = ("<C>This is a test of the Perl Cdk extension.",
+		"", "",
 		"<L></22>Written by...",
 		"<C></5/R>Mike Glover");
 
 # Create the label object.
-my $title = new Cdk::Label ('Mesg' => \@mesg);
+my $title = new Cdk::Label ('Message' => \@mesg);
 
 # Draw the label.
-$title->draw ('Box' => "TRUE");
+$title->set ('BoxAttribute' => "</B>");
+$title->draw ();
 $title->wait();
 
 # Exit Cdk.

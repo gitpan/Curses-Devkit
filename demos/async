@@ -32,7 +32,7 @@ my $scroll = new Cdk::Scroll ('Title' => "<C></U/5>Pick An Account",
 				'List' => \@listItems);
 
 # Create the label...
-my $clock = new Cdk::Label ('Mesg' => ["Current Time: HH:MM:SS"], 'Xpos' => "TOP");
+my $clock = new Cdk::Label ('Message' => ["Current Time: HH:MM:SS"], 'Xpos' => "TOP");
 
 # Draw the scrolling window.
 $clock->draw();
@@ -69,13 +69,26 @@ Cdk::end();
 #
 sub littleWeeClock
 {
+   #
+   # Turn off the alarm
+   #
+   $SIG{'ALRM'} = "IGNORE";
+   alarm (0);
+
+   #
    # Get the current time/date.
+   #
    my ($sec, $min, $hour) = (localtime(time));
    my $mesg = sprintf ("%02d:%02d:%02d", $hour, $min, $sec);
 
+   #
    # Add the line to the scrolling window.
-   $clock->set ('Mesg' => ["Current Time: </B/$sec>$mesg"]);
+   #
+   $clock->set ('Message' => ["Current Time: </B/$sec>$mesg"]);
 
+   #
    # Reset the alarm.
+   #
+   $SIG{'ALRM'} = "littleWeeClock";
    alarm (1);
 }

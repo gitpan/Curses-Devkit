@@ -42,7 +42,8 @@ my $viewer = new Cdk::Viewer ('Buttons' => [ "<<OK>>" ],
 				'Width' => $width);
 
 # Set the contents of the viewer.
-$viewer->set ('Title' => "<C></5>File: $filename", 'Info' => \@info);
+$viewer->set ('Title' => "<C></5>File: $filename",
+		'Info' => \@info);
 
 # Activate the viewer.
 my $selection = $viewer->activate();

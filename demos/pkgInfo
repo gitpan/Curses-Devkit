@@ -18,7 +18,7 @@ my @dialogMessge = ("<C></U>Unix Package Interface",
 my @buttons = ("<Add Package>", "<Remove Package>", "<Package Info>", "<Exit>");
  
 # Create the dialog widget.
-my $dialog = new Cdk::Dialog ('Mesg' => \@dialogMessge, 'Buttons' => \@buttons);
+my $dialog = new Cdk::Dialog ('Message' => \@dialogMessge, 'Buttons' => \@buttons);
 
 # Do this forever.
 for (;;)
@@ -74,7 +74,7 @@ sub addPackage
 			"<C>Could not open the directory </B>$pkgDir",
 			"<C></U>$!", "",
 			"<C>Press any key to continue.");
-      my $label = new Cdk::Label ('Mesg' => \@mesg);
+      my $label = new Cdk::Label ('Message' => \@mesg);
       $label->draw();
       $label->wait();
       return;
@@ -110,7 +110,7 @@ sub addPackage
          push (@selectedPackages, $packageNames[$x]);
       }
    }
-   my $label = new Cdk::Label ('Mesg' => \@selectedPackages);
+   my $label = new Cdk::Label ('Message' => \@selectedPackages);
    $label->draw();
    $label->wait();
 }
@@ -136,7 +136,7 @@ sub removePackage
 			"to delete the package </U>$name<!U>?");
 
          # Make sure they want to do it.
-         my $dialog = new Cdk::Dialog ('Mesg' => \@mesg,
+         my $dialog = new Cdk::Dialog ('Message' => \@mesg,
 					 'Buttons' => \@buttons);
  
          # Activate it.
@@ -186,8 +186,8 @@ sub packageInfo
  
    # Create the information viewer.
    my $viewer = new Cdk::Viewer ('Buttons' => ["OK"],
-					'Height' => 20,
-					'Width' => 50);
+					'Height' => -2,
+					'Width' => -4);
 
    # Activate the viewer.
    $viewer->set ('Title' => "<C>Package Name: </U>$packageName<!U>",

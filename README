@@ -1,5 +1,5 @@
 Cdk Perl5 Extension,
-Mike Glover, Copyright 1995, 1996
+Mike Glover, Copyright 1995, 1996, 1997
 ------------------------------------------------------------------------------
 This is the Perl5 extension to the Cdk library written by Mike Glover.
 All the copyright notices from the Cdk C distribution also apply to the
@@ -7,6 +7,18 @@ extension. If you don't agree then remove this package.
 
 The file FILES contains a list of all of the example and demonstration files
 provided with the Perl5 Cdk extension.
+
+Preamble
+--------
+******* BEFORE YOU CAN COMPILE THIS EXTENSION YOU NEED THE CDK LIBRARY!!!!! ***********
+But don't worry, you can pick it up from my web page at:
+
+    http://www.swi.com/~glover/cdk/cdk.html
+
+Then you must compile and install Cdk on your machine before you can
+compile this extension. Compiling and installing Cdk should not be a
+problem; it is supported on many platforms including Linx, FreeBSD, 
+Solaris, AIX, SGI, HP, DEC, Sun, etc...
 
 Compiling procedure:
 ---------------------
@@ -83,7 +95,7 @@ in this distribution. There is an example for each widget.
 Have fun.
 
 If you have any questions I can be contacted at:
-glover@tuzo.erin.utoronto.ca
+mike@swi.com
 
 ttfn,
 	Mike

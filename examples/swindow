@@ -14,7 +14,7 @@ Cdk::init();
 my $swindow = new Cdk::Swindow ('Title' => "<C></U>Scrolling Window", 
 					'Lines' => 200,
 					'Height' => 20,
-					'Width' => 50);
+					'Width' => -4);
 
 # Open this file and read myself in.
 my @info = qx (cat $0); chomp @info;

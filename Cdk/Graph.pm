@@ -16,13 +16,13 @@ sub new
    $self->{'Type'} = $type;
    
    # Set up the parameters passed in.
-   my $title = Cdk::checkReq ($name, "Title", $params{'Title'});
-   my $xtitle = Cdk::checkReq ($name, "Xtitle", $params{'Xtitle'});
-   my $ytitle = Cdk::checkReq ($name, "ytitle", $params{'Ytitle'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $xtitle	= Cdk::checkReq ($name, "Xtitle", $params{'Xtitle'});
+   my $ytitle	= Cdk::checkReq ($name, "ytitle", $params{'Ytitle'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
 
    # Create the thing.
    $self->{'Me'} = Cdk::Graph::New ($title, $xtitle, $ytitle, $height, $width, $xpos, $ypos);
@@ -30,25 +30,66 @@ sub new
 }
 
 #
-# This sets the objects values.
+# This sets several parameters of the widget.
 #
 sub set
 {
-   my $self		= shift;
-   my %params		= @_;
-   my $name		= "$self->{'Type'}::set";
+   my $self	= shift;
+   my %params	= @_;
+   my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $vals = Cdk::checkReq ($name, "Values", $params{'Values'});
-   my $graphChars = Cdk::checkReq ($name, "Graphchars",  $params{'Graphchars'});
-   my $startAtZero = Cdk::checkDef ($name, "StartAtZero", $params{'StartAtZero'}, "TRUE");
-   my $plotType = Cdk::checkDef ($name, "Plottype", $params{'Plottype'}, "LINE");
-
-   # Store the information in both the object and Perl's stack.
-   $self->{'Info'} = Cdk::Graph::Set ($self->{'Me'}, 
-				$params{'Values'}, $graphChars,
-				$startAtZero, $plotType);
-   return $self->{'Info'};
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Values'})
+   {
+      my $startAtZero = $params{'StartAtZero'} || 1;
+      Cdk::Graph::SetValues ($self->{'Me'}, $params{'Values'}, $params{'StartAtZero'});
+   }
+   if (defined $params{'GraphChars'})
+   {
+      Cdk::Graph::SetCharacters ($self->{'Me'}, $params{'GraphChars'});
+   }
+   if (defined $params{'DisplayType'})
+   {
+      Cdk::Graph::SetDisplayType ($self->{'Me'}, $params{'DisplayType'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Graph::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Graph::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Graph::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Graph::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Graph::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Graph::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Graph::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Graph::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Graph::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -60,8 +101,11 @@ sub draw
    my %params	= @_;
    my $name	= "$self->{'Type'}::draw";
 
+   # Set up the parameters passed in.
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "FALSE");
+
    # Draw the object.
-   Cdk::Graph::Draw ($self->{'Me'});
+   Cdk::Graph::Draw ($self->{'Me'}, $box);
 }
 
 #

@@ -18,7 +18,7 @@ my @titleMessage = ("<C></5>This is a CDK demo script<!5>",
 			"<C></5/U>Cdk Perl 5 extension.<!5>");
 
 # Create the title.
-my $title = new Cdk::Label ('Mesg' => \@titleMessage, 'Box'  => "FALSE");
+my $title = new Cdk::Label ('Message' => \@titleMessage, 'Box'  => "FALSE");
 
 # Set some global vars
 my $CONTINUE	= "</B/48>Press Any Key To Continue.<!B!48>";
@@ -27,9 +27,7 @@ my $HOME	= $ENV{'HOME'};
 # Create the menu.
 my $currentLoc	= 0;
 my @mLoc	= ("Switch to Pull-Up Menu  ", "Switch to Pull-Down Menu");
-my @fMenu	= ("</5>File<!5>",
-			"</5>Open<!5>",
-			"</5>Quit<!5>");
+my @fMenu	= ("</5>File<!5>", "</5>Quit<!5>");
 
 my @iMenu	= ("</5>Info<!5>",
 			"</5>Calendar        <!5>",
@@ -73,10 +71,7 @@ my @menulist = (\@fMenu, \@iMenu, \@eMenu, \@lMenu, \@mMenu, \@hMenu);
 my @menuloc = ("LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "RIGHT");
 
 # Create the menu
-my $menu = new Cdk::Menu ('Menulist' => \@menulist,
-				'Menuloc' => \@menuloc,
-				'Tattrib' => "</R/16>",
-				'SubTattrib' => "</B/29>");
+my $menu = new Cdk::Menu ('Menulist' => \@menulist, 'Menuloc' => \@menuloc);
 
 # Create the callback for the menu.
 $menu->bind ('Key' => '?', 'Function' => sub { main::menuCallback($menu); });
@@ -132,7 +127,7 @@ for (;;)
       $swindow->addline ('Info' => "<C>Hit return, tab, or escape to exit this window.");
       $swindow->activate();
    }
-   elsif ($menuSelection =~ "Viewer" || $menuSelection =~ "Open")
+   elsif ($menuSelection =~ "Viewer")
    {
       viewerDemo();
    }
@@ -257,10 +252,10 @@ for (;;)
       # Pop up a message about this script.
       my @mesg	= ("<C></U/40>Cdk Perl 5 Extension<!U!40>",
 			"<C></32>Written by Mike Glover<!32>", "",
-			"</16>Created     : December 1995<!16>", 
-			"</16>Last Updated: June 1996<!16>", "",
+			"</16>Created     : December, 1995<!16>", 
+			"</16>Last Updated: April, 1997<!16>", "",
 			$CONTINUE);
-      my $label	= new Cdk::Label ('Mesg' => \@mesg, 'Shadow' => "TRUE");
+      my $label	= new Cdk::Label ('Message' => \@mesg, 'Shadow' => "TRUE");
       $label->draw();
       $label->wait();
    }
@@ -290,7 +285,7 @@ sub labelDemo
    my @mesg = @_;
 
    # Create the label.
-   my $label = new Cdk::Label ('Mesg' => \@mesg);
+   my $label = new Cdk::Label ('Message' => \@mesg);
 
    # Draw the label and wait.
    $label->draw();
@@ -320,16 +315,16 @@ sub viewerDemo
 
    # Popup a file viewer.
    my $viewer	= new Cdk::Viewer ('Buttons' => ["OK"],
-					'Height' => 20,
-					'Width' => 78);
+					'Height' => 0,
+					'Width' => -2);
 
    # Load in the file.
    my @info	= qx (cat $fname); chomp (@info);
 
    # Set the contents of the viewer.
-   $viewer->set ('Title' => "<R></29>Viewing filename:<!29></38>$fname<!38>",
-			'Info' => \@info,
-			'Interp'  => "TRUE");
+   $viewer->set ('Info' => \@info,
+			'Interpret'  => "TRUE",
+			'Title' => "<R></29>Viewing filename:<!29></38>$fname<!38>");
 
    # Activate the viewer.
    $viewer->activate();
@@ -479,7 +474,7 @@ sub mentryDemo
 {
    # Create the mentry widget.
    my $mentry	= new Cdk::Mentry ('Label' => "</B/16>Enter Anything:",
-					'Fwidth' => 20,
+					'Width' => 20,
 					'Lrows' => 10,
 					'Prows' => 5);
 
@@ -502,31 +497,29 @@ sub mentryDemo
 #
 sub matrixDemo
 {
-   my @coltitles	= ("Item Name", "Base Price", "% Markup");
-   my @rowtitles	= ("Item 1", "Item 2", "Item 3");
-   my @colwidths	= (10, 6, 6);
-   my @coltypes		= ("VIEWONLY", "VIEWONLY", "INT");
-   my @matrixValues	= ( ["Flabberit", "10.99", ""],
+   my @colTitles	= ("Item Name", "Base Price", "% Markup");
+   my @rowTitles	= ("Item 1", "Item 2", "Item 3");
+   my @colWidths	= (6, 6, 6);
+   my @colTypes		= ("VIEWONLY", "VIEWONLY", "INT");
+   my @matrixValues	= (["Flabberit", "10.99", ""],
 				["Whatzit", "102.99", ""],
 				["Albatros", "99.99", ""]);
    my (@newlist, $x);
 
    # Create the matrix widget.
-   my $matrix = new Cdk::Matrix ('Rowtitles' => \@rowtitles,
-					'Coltitles' => \@coltitles,
-					'Colwidths' => \@colwidths,
-					'Coltypes' => \@coltypes,
-					'Boxmatrix' => "TRUE",
-					'Boxcell' => "TRUE",
-					'Shadow' => "TRUE",
+   my $matrix = new Cdk::Matrix ('Title' => ["<C>Flabberjabbit Sales", ""],
+					'RowTitles' => \@rowTitles,
+					'ColTitles' => \@colTitles,
+					'ColWidths' => \@colWidths,
+					'ColTypes' => \@colTypes,
 					'Vrows' => 3, 
-					'Vcols' => $#coltitles+1);
+					'Vcols' => 3);
 
    # Set the values of the matrix.
-   $matrix->set ( 'Values' => \@matrixValues );
+   $matrix->set ('Values' => \@matrixValues);
 
    # Activate the matrix.
-   my ($rows, $cols, $info)	= $matrix->activate ();
+   my ($rows, $cols, $info) = $matrix->activate ();
 
    # Did the user hit escape?
    return if ! defined $rows;
@@ -571,7 +564,7 @@ sub dialogDemo
    my @buttons	= ("date", "pwd", "whoami", "ls -l");
 
    # Create the dialog widget.
-   my $dialog	= new Cdk::Dialog ('Mesg' => \@mesg, 'Buttons' => \@buttons);
+   my $dialog	= new Cdk::Dialog ('Message' => \@mesg, 'Buttons' => \@buttons);
 
    # Activate the dialog box.
    my $pick	= $dialog->activate ();
@@ -753,23 +746,23 @@ sub histogramDemo
    my ($x);
 
    # Create the histogram label.
-   my $histLabel = "Time In Seconds This Demo Has Run  :";
+   my $histLabel = "<C>Time In Seconds This Demo Has Run";
 
    # Create the histogram widget.
-   my $hist	= new Cdk::Histogram ('Label' => $histLabel,
+   my $hist = new Cdk::Histogram ('Title' => $histLabel,
 					'Orient' => "HORIZONTAL",
 					'Height' => 5,
-					'Width' => 20);
+					'Width' => 0);
 
    # Take the current time - the start time of this script.
-   my $diff	= time - $;
+   my $diff = time - $;
 
    # Redraw the histogram every second.
    for ($x=0; $x < 5; $x++)
    {
       # Set the values of the histogram.
       $hist->set ('Low' => 1,
-			'Filler' => "</R/24> ",
+			'FillerChar' => "</R/24> ",
 			'High' => $diff + 25,
 			'Value' => $diff+$x,
 			'Statstype' => "REAL",
@@ -830,7 +823,7 @@ sub marqueeDemo
    my $marquee	= new Cdk::Marquee ('Width' => $width);
 
    # Activate the marquee widget.
-   $marquee->activate ('Mesg' => $message,
+   $marquee->activate ('Message' => $message,
 			'Delay' => $delay,
 			'Repeat' => $repeat);
 }
@@ -845,22 +838,22 @@ sub graphDemo
    my $graph	= new Cdk::Graph ('Title' => "<C>Camel Count",
 					'Xtitle' => "<C>Quantity",
 					'Ytitle' => "<C>Months",
-					'Height' => 17,
-					'Width' => 20);
+					'Height' => -4,
+					'Width' => -20);
 
    # Set the graph values.
    my @numberList = qw (10 12 14 16 17 22 31);
    my $graphChars = "ooooooo";
    $graph->set ('Values' => \@numberList,
-			'Plottype' => "PLOT",
-			'Graphchars' => $graphChars);
+			'DisplayType' => "PLOT",
+			'GraphChars' => $graphChars);
 
    # Draw the graph.
    $graph->draw();
 
    # Prompt the user.
    my @mesg	= ("When done looking at your Camels", "<C>$CONTINUE");
-   my $label	= new Cdk::Label ('Mesg' => \@mesg, 'Xpos' => "BOTTOM");
+   my $label	= new Cdk::Label ('Message' => \@mesg, 'Xpos' => "BOTTOM");
    $label->draw();
    $label->wait();
 }
@@ -981,7 +974,7 @@ sub generalHelp
 
    # Create the scrolling list ...
    my $helplist	= new Cdk::Scroll ('Title' => "<C></U/B/29>Pick A Topic",
-					'Highlight' => "</B/5>",
+					'Highlight' => "</R>",
 					'List' => \@conceptList,
 					'Numbers' => "TRUE",
 					'Height' => $#conceptList+4,
@@ -1088,7 +1081,7 @@ sub widgetHelp
 
    # Create the scrolling list ...
    my $helplist	= new Cdk::Scroll ('Title' => "<C></U/B/29>Pick A Topic",
-					'Highlight' => "</B/5>",
+					'Highlight' => "</R>",
 					'List' => \@widgetList,
 					'Numbers' => "TRUE",
 					'Height' => $#widgetList+4,

@@ -12,15 +12,12 @@ Cdk::init();
 
 # Create the file selector.
 my $fselect = new Cdk::Fselect ('Label' => "</B/16>Filename:", 
-				'Dattrib' => "</B/5>",
-				'Fattrib' => "</B/32>",
-				'Lattrib' => "</B/33>",
-				'Sattrib' => "</B/29>",
 				'Filler' => "</B/24>_",
-				'Height' => 20,
-				'Width' => 50);
+				'Height' => 0,
+				'Width' => 0);
 
 # Activate the object.
+$fselect->set ('ULChar' => "#");
 my $filename = $fselect->activate();
 
 # Check the results.

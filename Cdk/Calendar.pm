@@ -19,22 +19,23 @@ sub new
    $thisYear += 1900;
 
    # Set up the parameters passed in.
-   my $day = Cdk::checkDef ($name, "Day", $params{'Day'}, $today);
-   my $month = Cdk::checkDef ($name, "Month", $params{'Month'}, $thisMonth);
-   my $year = Cdk::checkDef ($name, "Year", $params{'Year'}, $thisYear);
-   my $dAttrib = Cdk::checkDef ($name, "Dattrib", $params{'Dattrib'}, "A_NORMAL");
-   my $mAttrib = Cdk::checkDef ($name, "Mattrib", $params{'Mattrib'}, "A_NORMAL");
-   my $yAttrib = Cdk::checkDef ($name, "Yattrib", $params{'Yattrib'}, "A_NORMAL");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $day	= Cdk::checkDef ($name, "Day", $params{'Day'}, $today);
+   my $month	= Cdk::checkDef ($name, "Month", $params{'Month'}, $thisMonth);
+   my $year	= Cdk::checkDef ($name, "Year", $params{'Year'}, $thisYear);
+   my $dAttrib	= Cdk::checkDef ($name, "Dattrib", $params{'Dattrib'}, "A_NORMAL");
+   my $mAttrib	= Cdk::checkDef ($name, "Mattrib", $params{'Mattrib'}, "A_NORMAL");
+   my $yAttrib	= Cdk::checkDef ($name, "Yattrib", $params{'Yattrib'}, "A_NORMAL");
+   my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Calendar::New ($day, $month, $year,
+   $self->{'Me'} = Cdk::Calendar::New ($title, $day, $month, $year,
 					$dAttrib, $mAttrib, $yAttrib,
-					$highlight, $xpos, $ypos, $box, $shadow);
+					$hlight, $xpos, $ypos, $box, $shadow);
    bless $self;
 }
 
@@ -127,7 +128,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Calendar::Draw ($self->{'Me'}, $box);
@@ -185,6 +186,15 @@ sub setDate
    my $year = Cdk::checkDef ($name, "Year", $params{'Year'}, -1);
 
    Cdk::Calendar::SetDate ($self->{'Me'}, $day, $month, $year);
+}
+
+#
+# This gets the current date on the given calendar.
+#
+sub getDate
+{
+   my $self = shift;
+   return (Cdk::Calendar::GetDate ($self->{'Me'}));
 }
 
 #

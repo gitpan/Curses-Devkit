@@ -26,7 +26,7 @@ $menu->draw();
 
 # Create the title.
 my @title = ("<C></16/U>Cdk/Perl5 Rolodex", "<C></16>Written by Mike Glover");
-my $rolodexTitle = new Cdk::Label ('Mesg' => \@title, 'Box' => "FALSE");
+my $rolodexTitle = new Cdk::Label ('Message' => \@title, 'Box' => "FALSE");
 $rolodexTitle->draw("Box" => "FALSE");
 
 # Load up the RC file.
@@ -355,7 +355,7 @@ sub useRolodexGroup
    my $helpMesg = ["<C><#HL(30)",
 			"Press </B>?<!B> to get detailed help.",
 			"<C><#HL(30)>"];
-   my $helpWindow = new Cdk::Label ('Mesg' => $helpMesg, 
+   my $helpWindow = new Cdk::Label ('Message' => $helpMesg, 
 					'Box' => "FALSE",
 					'Xpos' => "BOTTOM");
    $helpWindow->draw('Box' => "FALSE");
@@ -561,20 +561,20 @@ sub displayPhoneRecord
    if ($type =~ /cell/i || $type =~ /pager/i)
    {
       $mesg = ["<C></U>$type Phone Record",
-		"</R>Name        <!R>$record->{'Name'}",
-		"</R>Phone Number<!R>$record->{'Number'}",
-		"</R>Comment     <!R>$record->{'Description'}"];
+		"</B/5>Name        <!B!5>$record->{'Name'}",
+		"</B/5>Phone Number<!B!5>$record->{'Number'}",
+		"</B/5>Comment     <!B!5>$record->{'Description'}"];
    }
    else
    {
       $mesg = ["<C></U>$type Phone Record",
-		"</R>Name        <!R>$record->{'Name'}",
-		"</R>Phone Number<!R>$record->{'Number'}",
-		"</R>Address     <!R>$record->{'Address'}",
-		"</R>City        <!R>$record->{'City'}",
-		"</R>Province    <!R>$record->{'Province'}",
-		"</R>Postal Code <!R>$record->{'Postal Code'}",
-		"</R>Comment     <!R>$record->{'Description'}"];
+		"</B/5>Name        <!B!5>$record->{'Name'}",
+		"</B/5>Phone Number<!B!5>$record->{'Number'}",
+		"</B/5>Address     <!B!5>$record->{'Address'}",
+		"</B/5>City        <!B!5>$record->{'City'}",
+		"</B/5>Province    <!B!5>$record->{'Province'}",
+		"</B/5>Postal Code <!B!5>$record->{'Postal Code'}",
+		"</B/5>Comment     <!B!5>$record->{'Description'}"];
    }
    popupLabel ($mesg);
 }
@@ -595,7 +595,7 @@ sub getNewPhoneRecord
 
    # Create the title label.
    my $mesg = ["<C></R>Add New Phone Record"];
-   my $title = new Cdk::Label ('Mesg' => $mesg, 
+   my $title = new Cdk::Label ('Message' => $mesg, 
 				'Box' => "FALSE",
 				'Xpos' => "TOP");
    $title->draw ('Box' => "FALSE");
@@ -875,7 +875,7 @@ sub printRolodexGroups
       {
          # Create a label for a title.
          my $mesg = ["<C></R>Printing Group [$groupName] to Printer"];
-         my $title = new Cdk::Label ('Mesg' => $mesg,
+         my $title = new Cdk::Label ('Message' => $mesg,
 					'Box' => "FALSE",
 					'Xpos' => "TOP");
          $title->draw ('Box' => "FALSE");
@@ -902,7 +902,7 @@ sub printRolodexGroups
       {
          # Create a label for a title.
          my $mesg = ["<C></R>Printing Group [$groupName] to File"];
-         my $title = new Cdk::Label ('Mesg' => $mesg,
+         my $title = new Cdk::Label ('Message' => $mesg,
 					'Box' => "FALSE",
 					'Xpos' => "TOP");
          $title->draw ('Box' => "FALSE");

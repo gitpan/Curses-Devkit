@@ -21,6 +21,8 @@ my $alphalist = new Cdk::Alphalist ('Label' => "Type Anything:",
 					'Width' => 60,
 					'List' => \@info);
 
+$alphalist->set ('BoxAttribute' => "</R>");
+
 # Activate the object.
 my $info = $alphalist->activate();
 

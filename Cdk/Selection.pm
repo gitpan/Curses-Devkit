@@ -16,23 +16,24 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $title = Cdk::checkReq ($name, "Title", $params{'Title'});
-   my $list = Cdk::checkReq ($name, "List", $params{'List'});
-   my $choices = Cdk::checkReq ($name, "Choices", $params{'Choices'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $list	= Cdk::checkReq ($name, "List", $params{'List'});
+   my $choices	= Cdk::checkReq ($name, "Choices", $params{'Choices'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $spos	= Cdk::checkDef ($name, "Spos", $params{'Spos'}, "NONE");
+   my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
    $self->{'Me'} = Cdk::Selection::New ($title,
 					$params{'List'},
 					$params{'Choices'},
-					$height, $width, $xpos, $ypos,
-					$highlight, $box, $shadow);
+					$height, $width, $xpos, $ypos, $spos,
+					$hlight, $box, $shadow);
    bless $self;
 }
 
@@ -126,7 +127,7 @@ sub postProcess
 }
 
 #
-# This sets certain attributes of the selection list.
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -134,12 +135,65 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $highlight = Cdk::checkReq ($name, "Highlight", $params{'Highlight'});
-   my $defChoices = Cdk::checkReq ($name, "Defaults", $params{'Defaults'});
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   Cdk::Selection::Set ($self->{'Me'}, $highlight, $params{'Defaults'}, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Highlight'})
+   {
+      Cdk::Selection::SetHighlight ($self->{'Me'}, $params{'Highlight'});
+   }
+   if (defined $params{'Choices'})
+   {
+      Cdk::Selection::SetChoices ($self->{'Me'}, $params{'Choices'});
+   }
+   if (defined $params{'Choice'})
+   {
+      Cdk::Selection::SetChoice ($self->{'Me'}, $params{'Choice'}, $params{'Index'});
+   }
+   if (defined $params{'Modes'})
+   {
+      Cdk::Selection::SetModes ($self->{'Me'}, $params{'Modes'});
+   }
+   if (defined $params{'Mode'})
+   {
+      Cdk::Selection::SetMode ($self->{'Me'}, $params{'Mode'}, $params{'Index'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Selection::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Selection::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Selection::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Selection::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Selection::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Selection::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Selection::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Selection::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Selection::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -152,7 +206,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Selection::Draw ($self->{'Me'}, $box);

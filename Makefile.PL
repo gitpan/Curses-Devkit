@@ -5,10 +5,10 @@ use ExtUtils::MakeMaker;
 # Linux
 WriteMakefile(
     'NAME'	=> 'Cdk',
-    'VERSION'	=> '4.8',
-    'LIBS'	=> ['-L/usr/local/lib -L/home/glover/cdk -lcdk -lncurses'],
-    'DEFINE'	=> '-DNCURSES -DCOLOR',
-    'INC'	=> '-I/usr/include/ncurses -I/home/glover/cdk',
+    'VERSION'	=> '4.9.1',
+    'LIBS'	=> ['-L/home/glovem/local/lib -lcdk -lcurses'],
+    'DEFINE'	=> '-DNCURSES -DCOLOR -DCDK_PERL_EXT',
+    'INC'	=> '-I/usr/include/ncurses -I/home/glovem/local/include',
     'clean'	=> {FILES => 'Makefile.old'},
 );
 

@@ -16,18 +16,18 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $buttons = Cdk::checkReq ($name, "Buttons", $params{'Buttons'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $buttons	= Cdk::checkReq ($name, "Buttons", $params{'Buttons'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
    $self->{'Me'} = Cdk::Viewer::New ($params{'Buttons'},
-					$height, $width, $highlight,
+					$height, $width, $hlight,
 					$xpos, $ypos,
 					$box, $shadow);
    bless $self;
@@ -48,23 +48,70 @@ sub activate
 }
 
 #
-# This sets the contents of the information.
+# This sets several parameters of the widget.
 #
 sub set
 {
-   my $self		= shift;
-   my %params		= @_;
-   my $name		= "$self->{'Type'}::set";
+   my $self	= shift;
+   my %params	= @_;
+   my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $title = Cdk::checkReq ($name, "Title", $params{'Title'});
-   my $list = Cdk::checkReq ($name, "Info", $params{'Info'});
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $interp = Cdk::checkDef ($name, "Interp", $params{'Interp'}, "TRUE");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
-
-   # Set the contents of the object.
-   Cdk::Viewer::Set ($self->{'Me'}, $title, $params{'Info'}, $highlight, $interp, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Info'})
+   {
+      my $interpret = $params{'Interpret'} || 1;
+      Cdk::Viewer::SetInfo ($self->{'Me'}, $params{'Info'}, $interpret);
+   }
+   if (defined $params{'Title'})
+   {
+      Cdk::Viewer::SetTitle ($self->{'Me'}, $params{'Title'});
+   }
+   if (defined $params{'Highlight'})
+   {
+      Cdk::Viewer::SetHighlight ($self->{'Me'}, $params{'Highlight'});
+   }
+   if (defined $params{'InfoLine'})
+   {
+      Cdk::Viewer::SetInfoLine ($self->{'Me'}, $params{'InfoLine'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Viewer::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Viewer::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Viewer::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Viewer::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Viewer::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Viewer::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Viewer::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Viewer::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Viewer::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -77,7 +124,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Viewer::Draw ($self->{'Me'}, $box);

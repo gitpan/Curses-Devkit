@@ -18,21 +18,19 @@ my $chars  = "123456789";
 my $graph = new Cdk::Graph ('Title' => "<C></3>Total Breakins",
 				'Xtitle' => "<C></2>Count",
 				'Ytitle' => '<C></5>Time Period',
-				'Height' => 15,
-				'Width' => 20);
+				'Height' => -4,
+				'Width' => -4);
 
 # Load the object up.
-if (! $graph->set ('Values' => \@values, 'Graphchars' => $chars))
-{
-   Cdk::end();
-   print "Not enough characters";
-}
+$graph->set ('Values' => \@values,
+		'GraphChars' => $chars,
+		'Box' => "FALSE");
 
 # Draw the graph.
 $graph->draw();
 
 # Wait until the user hits a key.
-Cdk::getch();
+getc(STDIN);
 
 # End Cdk.
 Cdk::end();

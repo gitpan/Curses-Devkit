@@ -16,7 +16,7 @@ sub getScreenRegList
    $self->{'Type'} = $type;
    
    # Set up the parameters passed in.
-   my $mesg = Cdk::checkReq ($name, "Mesg", $params{'Mesg'});
+   my $mesg = Cdk::checkReq ($name, "Message", $params{'Message'});
 
    # Call the thing.
    Cdk::Diag::DumpScreenRegList ($mesg);

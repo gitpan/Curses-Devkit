@@ -25,7 +25,25 @@ my ($Version) = "1.00";
 my $address = "perlbug\@perl.com";
 
 # Check the command line arguments.
-getopts("c:a:f:r:s:");
+getopts("c:a:f:r:s:vh");
+
+# Did they ask for help?
+if (defined $opt_h)
+{
+   my @help = ("<C></B/5>Perl Bug Reporting Facility Help Window.",
+		"</B/5>Usage:<!B!5> $0 [-c CC] [-a Admin Account]",
+		"          [-r Reply Account] [-s subject]",
+		"          [-f filename] [-v] [-h]", "",
+		"<B=-c> The account to carbon copy to.",
+		"<B=-a> The perl admin account.",
+		"<B=-r> The account to reply to.",
+		"<B=-s> The subject of the bug report.",
+		"<B=-f> The file to read in as the bug report.",
+		"<B=-v> Turns on verbose output for the bug report.",
+		"<B=-h> Pops up this help window.", "",
+		"<C></B/5>Press Any Key To Continue.");
+   popupLabel (\@help);
+}
 
 # Create a program information message.
 my @progInfo = ("<C></5/B>Perl Bug Reporting Facility",
@@ -40,10 +58,11 @@ my @mesg = ("******************************************************",
 		"******************************************************",
 		"******************************************************",
 		"******************************************************");
-my $mainTitle = new Cdk::Label ('Mesg' => \@mesg, 'Xpos' => "TOP");
+my $mainTitle = new Cdk::Label ('Message' => \@mesg, 'Xpos' => "TOP");
 
 # Get the subject to the mail message.
 my $subject = $opt_s || getSubject ($mainTitle);
+my $verbose = $opt_v;
 
 # Get the reply address.
 @mesg = ("<C></B/24>Return Email Address",
@@ -73,7 +92,7 @@ sub getSubject
    my $mainTitle = shift;
 
    # Create the subject entry field.
-   my $entry = new Cdk::Entry ('Label' => "</B/5>Subject",
+   my $entry = new Cdk::Entry ('Label' => "</B/5>Subject: ",
 				'Width' => 35,
 				'Min' => 3,
 				'Max' => 256);
@@ -83,7 +102,7 @@ sub getSubject
 		"<C>Please provide a subject for the message. It",
 		"<C>should be as a concise description of the bug",
 		"<C>as is possible.");
-   $mainTitle->set ('Mesg' => \@mesg);
+   $mainTitle->set ('Message' => \@mesg);
    $mainTitle->draw();
 
    # Get the subject.
@@ -110,10 +129,10 @@ sub getEmailAddress
    my $info;
 
    # Set the main title info.
-   $mainTitle->set ('Mesg' => \@mesg);
+   $mainTitle->set ('Message' => \@mesg);
 
    # Create the entry field to get the email address.
-   $entry = new Cdk::Entry ('Label' => "</B/5>email Address",
+   $entry = new Cdk::Entry ('Label' => "</B/5>email Address: ",
 				'Min' => 3,
 				'Max' => 256,
 				'Width' => 35);
@@ -160,10 +179,10 @@ sub createBugReport
 			"<C>Enter a description of the bug you are submitting.");
 
    # Set the main title info.
-   $mainTitle->set ('Mesg' => \@mesg);
+   $mainTitle->set ('Message' => \@mesg);
 
    # Create the entry field to get the email address.
-   $entry = new Cdk::Mentry ('Label' => "</B/5>Description",
+   $entry = new Cdk::Mentry ('Label' => "</B/5>Description: ",
 				'Prows' => 8,
 				'Lrows' => 15,
 				'Width' => 50);
@@ -201,11 +220,23 @@ sub createBugReport
       push (@bugReport, "Configured by $::Config{cf_by} at $::Config{cf_time}.");
    }
    push (@bugReport, "");
-   push (@bugReport, "Complete configuration data for perl $]:");
-   push (@bugReport, "");
    foreach (split (/\n/, Config::myconfig))
    {
       push (@bugReport, $_);
+   }
+
+   # Do they want a verbose bug report?
+   if ($::opt_v)
+   {
+      push (@bugReport, "");
+      push (@bugReport, "Complete configuration data for perl $]:");
+      push (@bugReport, "");
+      foreach (sort keys %::Config)
+      {
+         my $value = $::Config{$_};
+         $value =~ s/'/\\'/g;
+         push (@bugReport, "$_='$value'");
+      }
    }
    return @bugReport;
 }
@@ -272,7 +303,7 @@ sub saveBugReport
    my @bugReport = @_;
 
    # Get the filename to save to.
-   my $entry = new Cdk::Entry ('Label' => "</B/5>Filename:",
+   my $entry = new Cdk::Entry ('Label' => "</B/5>Filename: ",
 				'Width' => 30,
 				'Min' => 2,
 				'Max' => 256);

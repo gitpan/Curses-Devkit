@@ -11,17 +11,19 @@ use Cdk;
 Cdk::init();
 
 # Create a list of the months of the year.
-my @months = ("<L></B>January", "<C></B>Feburary", "<R></B>March",
-		"<L></U>April", "<C></U>May", "<R></U>June",
-		"<L></K>July", "<C></K>August", "<R></K>September",
-		"<L></R>October", "<C></R>November", "<R></R>December");
+my @months = (
+	"<C></B>January",	"<C></B>Feburary",	"<C></B>March",
+	"<C></U>April",		"<C></U>May",		"<C></U>June",
+	"<C></K>July",		"<C></K>August",	"<C></K>September",
+	"<C></R>October",	"<C></R>November",	"<C></R>December");
 
 # Create an itemlist widget.
-$monthIL = new Cdk::Itemlist ('Label' => "Pick a month: ",
-				'List' => \@months);
+my $itemlist = new Cdk::Itemlist ('List' => \@months,
+					'Label' => "Month >>",
+					'Title' => ["<C>Pick A Month"]);
 
 # Activate the object.
-my $choice = $monthIL->activate();
+my $choice = $itemlist->activate();
 
 # Check the results
 if (!defined $choice)

@@ -17,12 +17,13 @@ my @radioList = ("Item 1", "Item 2", "Item 3",
 			"Item 10", "Item 11", "Item 12");
 
 # Create the radio list object.
-my $radioWidget = new Cdk::Radio ('Title' => "<C></5>Radio List",
+my $radioWidget = new Cdk::Radio ('Title' => ["<C></5>Radio List"],
 					'List' => \@radioList,
 					'Height' => 10,
 					'Width' => 20);
 
 # Activate the radio object.
+$radioWidget->set ('Choice' => "#");
 my $choice = $radioWidget->activate ();
 
 # Check the results.

@@ -16,25 +16,26 @@ sub new
    $self->{'Type'} = $type;
    
    # Set up the parameters passed in.
-   my $label = Cdk::checkReq ($name, "Label", $params{'Label'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $dattrib = Cdk::checkDef ($name, "Dattrib", $params{'Dattrib'}, "</N>");
-   my $fattrib = Cdk::checkDef ($name, "Fattrib", $params{'Fattrib'}, "</N>");
-   my $lattrib = Cdk::checkDef ($name, "Lattrib", $params{'Lattrib'}, "</N>");
-   my $sattrib = Cdk::checkDef ($name, "Sattrib", $params{'Sattrib'}, "</N>");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $filler = Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
-   my $fieldattr = Cdk::checkDef ($name, "Fieldattr", $params{'Fieldattr'}, "A_NORMAL");
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $label	= Cdk::checkDef ($name, "Label", $params{'Label'}, "");
+   my $dattrib	= Cdk::checkDef ($name, "Dattrib", $params{'Dattrib'}, "</B>");
+   my $fattrib	= Cdk::checkDef ($name, "Fattrib", $params{'Fattrib'}, "</N>");
+   my $lattrib	= Cdk::checkDef ($name, "Lattrib", $params{'Lattrib'}, "</B>");
+   my $sattrib	= Cdk::checkDef ($name, "Sattrib", $params{'Sattrib'}, "</B>");
+   my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
+   my $filler	= Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
+   my $fAttr	= Cdk::checkDef ($name, "Fieldattr", $params{'Fieldattr'}, "A_NORMAL");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Fselect::New ($label, $height, $width,
+   $self->{'Me'} = Cdk::Fselect::New ($title, $label, $height, $width,
 					$dattrib, $fattrib, $lattrib, $sattrib,
-					$highlight, $fieldattr, $filler,
+					$hlight, $fAttr, $filler,
 					$xpos, $ypos, $box, $shadow);
    bless  $self;
 }
@@ -61,7 +62,7 @@ sub activate
 }
 
 #
-# This sets the value in the file selector field.
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -69,23 +70,74 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set the values.
-   my $directory = Cdk::checkReq ($name, "Directory", $params{'Directory'});
-   my $dattrib = Cdk::checkDef ($name, "Dattrib", $params{'Dattrib'}, "</N>");
-   my $fattrib = Cdk::checkDef ($name, "Fattrib", $params{'Fattrib'}, "</N>");
-   my $lattrib = Cdk::checkDef ($name, "Lattrib", $params{'Lattrib'}, "</N>");
-   my $sattrib = Cdk::checkDef ($name, "Sattrib", $params{'Sattrib'}, "</N>");
-   my $highlight = Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $fieldattr = Cdk::checkDef ($name, "Fattrib", $params{'Fieldattr'}, "A_NORMAL");
-   my $filler = Cdk::checkDef ($name, "Filler", $params{'Filler'}, ".");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   # Call the method.
-   Cdk::Fselect::Set ($self->{'Me'}, $directory,
-			$dattrib, $fattrib, $lattrib, $sattrib,
-			$highlight, $fieldattr, $filler, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Directory'})
+   {
+      Cdk::Fselect::SetDirectory ($self->{'Me'}, $params{'Directory'});
+   }
+   if (defined $params{'FillerChar'})
+   {
+      Cdk::Fselect::SetFillerChar ($self->{'Me'}, $params{'FillerChar'});
+   }
+   if (defined $params{'Highlight'})
+   {
+      Cdk::Fselect::SetHighlight ($self->{'Me'}, $params{'Highlight'});
+   }
+   if (defined $params{'DirAttribute'})
+   {
+      Cdk::Fselect::SetDirAttribute ($self->{'Me'}, $params{'DirAttribute'});
+   }
+   if (defined $params{'LinkAttribute'})
+   {
+      Cdk::Fselect::SetLinkAttribute ($self->{'Me'}, $params{'LinkAttribute'});
+   }
+   if (defined $params{'FileAttribute'})
+   {
+      Cdk::Fselect::SetFileAttribute ($self->{'Me'}, $params{'FileAttribute'});
+   }
+   if (defined $params{'SocketAttribute'})
+   {
+      Cdk::Fselect::SetSocketAttribute ($self->{'Me'}, $params{'SocketAttribute'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Fselect::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Fselect::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Fselect::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Fselect::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Fselect::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Fselect::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Fselect::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Fselect::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Fselect::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
-
 #
 # This function allows the user to get the current value from the widget.
 #
@@ -148,7 +200,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set the values.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Fselect::Draw ($self->{'Me'}, $box);

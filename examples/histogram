@@ -12,27 +12,31 @@ Cdk::init();
 
 my $x;
 
-# Create the histogram
-my $histogram = new Cdk::Histogram ('Label' => "Loading CDK: ",
-					'Filler' => "</R/16> ",
+#
+# Create the histogram.
+#
+my $histogram = new Cdk::Histogram ('Title' => "<C>Dum De Dummmm",
 					'Height' => 3,
-					'Width' => 20,
+					'Width' => 0,
 					'Orient' => "HORIZONTAL");
+
+#
+# Set some properties of the histogram.
+#
+$histogram->set ('StatsType' => "PERCENT",
+			'StatsPos' => "CENTER",
+			'FillerChar' => "</R> ");
 
 # Set the values.
 for ($x=1; $x <= 100; $x += 2)
 {
    # Set the values of the histogram.
-   $histogram->set ('Low' => 1,
-			'High' => 100,
-			'Value' => $x,
-			'Statstype' => "PERCENT",
-			'Statspos'  => "CENTER");
+   $histogram->set ('Value' => $x,
+			'Low' => 1,
+			'High' => 100);
 
    # Draw the histogram.
-   $histogram->draw ('Box' => "TRUE");
-
-   # Sleep a moment.
+   $histogram->draw ();
    sleep (1);
 }
 

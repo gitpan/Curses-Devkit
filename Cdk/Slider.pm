@@ -14,25 +14,26 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $label = Cdk::checkReq ($name, "Label", $params{'Label'});
-   my $low = Cdk::checkReq ($name, "Low", $params{'Low'});
-   my $high = Cdk::checkReq ($name, "High", $params{'High'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $inc = Cdk::checkDef ($name, "Inc", $params{'Inc'}, 1);
-   my $fastinc = Cdk::checkDef ($name, "Fastinc", $params{'Fastinc'}, 5);
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $lpos = Cdk::checkDef ($name, "Lpos", $params{'Lpos'}, "LEFT");
-   my $start = Cdk::checkDef ($name, "Start", $params{'Start'}, $params{'Low'});
-   my $fillerChar = Cdk::checkDef ($name, "Filler", $params{'Filler'}, "</R> ");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $low	= Cdk::checkReq ($name, "Low", $params{'Low'});
+   my $high	= Cdk::checkReq ($name, "High", $params{'High'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $label	= Cdk::checkDef ($name, "Label", $params{'Label'}, "");
+   my $inc	= Cdk::checkDef ($name, "Inc", $params{'Inc'}, 1);
+   my $fastInc	= Cdk::checkDef ($name, "Fastinc", $params{'Fastinc'}, 5);
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $start	= Cdk::checkDef ($name, "Start", $params{'Start'}, $params{'Low'});
+   my $filler	= Cdk::checkDef ($name, "Filler", $params{'Filler'}, "</R> ");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Slider::New ($label, $start, $low, $high,
+   $self->{'Me'} = Cdk::Slider::New ($title, $label,
+					$start, $low, $high,
 					$inc, $fastinc,
-					$width, $xpos, $ypos, $lpos,
-					$fillerChar, $box, $shadow);
+					$width, $xpos, $ypos,
+					$filler, $box, $shadow);
    bless $self;
 }
 
@@ -125,7 +126,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Slider::Draw ($self->{'Me'}, $box);
@@ -141,7 +142,7 @@ sub erase
 }
 
 #
-# This sets the object...
+# This sets several parameters of the widget.
 #
 sub set
 {
@@ -149,13 +150,53 @@ sub set
    my %params	= @_;
    my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $low = Cdk::checkReq ($name, "Low", $params{'Low'});
-   my $high = Cdk::checkReq ($name, "High", $params{'High'});
-   my $value = Cdk::checkReq ($name, "Value", $params{'Value'});
-   my $box= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-
-   Cdk::Slider::Set ($self->{'Me'}, $low, $high, $value, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Value'})
+   {
+      Cdk::Slider::SetValue ($self->{'Me'}, $params{'Value'});
+   }
+   if (defined $params{'Low'})
+   {
+      Cdk::Slider::SetLowHigh ($self->{'Me'}, $params{'Low'}, $params{'High'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Slider::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Slider::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Slider::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Slider::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Slider::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Slider::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Slider::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Slider::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Slider::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #

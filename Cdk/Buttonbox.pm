@@ -1,10 +1,10 @@
-package Cdk::Dialog;
+package Cdk::Buttonbox;
 require "flush.pl";
 
 @ISA	= qw (Cdk);
 
 #
-# This creates a new Dialog object.
+# This creates a new Buttonbox object.
 #
 sub new
 {
@@ -17,21 +17,24 @@ sub new
    $self->{'Type'} = $type;
    
    # Set up the parameters passed in.
-   my $mesg	= Cdk::checkReq ($name, "Message", $params{'Message'});
    my $buttons	= Cdk::checkReq ($name, "Buttons", $params{'Buttons'});
+   my $rows	= Cdk::checkReq ($name, "Rows", $params{'Rows'});
+   my $cols	= Cdk::checkReq ($name, "Cols", $params{'Cols'});
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
    my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
    my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
    my $hlight	= Cdk::checkDef ($name, "Highlight", $params{'Highlight'}, "A_REVERSE");
-   my $sep	= Cdk::checkDef ($name, "Seperator", $params{'Seperator'}, "TRUE");
    my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Dialog::New ($params{'Message'},
-					$params{'Buttons'},
+   $self->{'Me'} = Cdk::Buttonbox::New ($title, $params{'Buttons'},
+					$rows, $cols,
+					$height, $width,
 					$xpos, $ypos,
-					$hlight, $sep,
-					$box, $shadow);
+					$hlight, $box, $shadow);
    bless $self;
 }
 
@@ -47,11 +50,11 @@ sub activate
    # Activate the object...
    if (defined $params{'Input'})
    {
-      $self->{'Info'} = Cdk::Dialog::Activate ($self->{'Me'}, $params{'Input'});
+      $self->{'Info'} = Cdk::Buttonbox::Activate ($self->{'Me'}, $params{'Input'});
    }
    else
    {
-      $self->{'Info'} = Cdk::Dialog::Activate ($self->{'Me'});
+      $self->{'Info'} = Cdk::Buttonbox::Activate ($self->{'Me'});
    }
    return ($self->{'Info'});
 }
@@ -68,7 +71,7 @@ sub inject
    # Set the values.
    my $character = Cdk::checkReq ($name, "Input", $params{'Input'});
 
-   return (Cdk::Dialog::Inject ($self->{'Me'}, $character));
+   return (Cdk::Buttonbox::Inject ($self->{'Me'}, $character));
 }
 
 #
@@ -85,47 +88,43 @@ sub set
    #
    if (defined $params{'Highlight'})
    {
-      Cdk::Dialog::SetHighlight ($self->{'Me'}, $params{'Highlight'});
-   }
-   if (defined $params{'Separator'})
-   {
-      Cdk::Dialog::SetSeparator ($self->{'Me'}, $params{'Separator'});
+      Cdk::Buttonbox::SetHighlight ($self->{'Me'}, $params{'Highlight'});
    }
    if (defined $params{'ULChar'})
    {
-      Cdk::Dialog::SetULChar ($self->{'Me'}, $params{'ULChar'});
+      Cdk::Buttonbox::SetULChar ($self->{'Me'}, $params{'ULChar'});
    }
    if (defined $params{'URChar'})
    {
-      Cdk::Dialog::SetURChar ($self->{'Me'}, $params{'URChar'});
+      Cdk::Buttonbox::SetURChar ($self->{'Me'}, $params{'URChar'});
    }
    if (defined $params{'LLChar'})
    {
-      Cdk::Dialog::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+      Cdk::Buttonbox::SetLLChar ($self->{'Me'}, $params{'LLChar'});
    }
    if (defined $params{'LRChar'})
    {
-      Cdk::Dialog::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+      Cdk::Buttonbox::SetLRChar ($self->{'Me'}, $params{'LRChar'});
    }
    if (defined $params{'VChar'})
    {
-      Cdk::Dialog::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+      Cdk::Buttonbox::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
    }
    if (defined $params{'HChar'})
    {
-      Cdk::Dialog::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+      Cdk::Buttonbox::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
    }
    if (defined $params{'BoxAttribute'})
    {
-      Cdk::Dialog::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+      Cdk::Buttonbox::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
    }
    if (defined $params{'BGColor'})
    {
-      Cdk::Dialog::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+      Cdk::Buttonbox::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
    }
    if (defined $params{'Box'})
    {
-      Cdk::Dialog::SetBox ($self->{'Me'}, $params{'Box'});
+      Cdk::Buttonbox::SetBox ($self->{'Me'}, $params{'Box'});
    }
 }
 
@@ -142,7 +141,7 @@ sub draw
    my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
-   Cdk::Dialog::Draw ($self->{'Me'}, $box);
+   Cdk::Buttonbox::Draw ($self->{'Me'}, $box);
 }
 
 #
@@ -151,7 +150,7 @@ sub draw
 sub erase
 {
    my $self	= shift;
-   Cdk::Dialog::Erase ($self->{'Me'});
+   Cdk::Buttonbox::Erase ($self->{'Me'});
 }
 
 #
@@ -168,7 +167,7 @@ sub bind
    my $function = Cdk::checkReq ($name, "Function", $params{'Function'});
    
    # Bind the key to the function
-   Cdk::Dialog::Bind ($self->{'Me'}, $key, $function);
+   Cdk::Buttonbox::Bind ($self->{'Me'}, $key, $function);
 }
 
 #
@@ -182,7 +181,7 @@ sub preProcess
  
    # Set the values.
    my $function = Cdk::checkReq ($name, "Function", $params{'Function'});
-   Cdk::Dialog::PreProcess ($self->{'Me'}, $params{'Function'});
+   Cdk::Buttonbox::PreProcess ($self->{'Me'}, $params{'Function'});
 }
 
 #
@@ -196,7 +195,7 @@ sub postProcess
  
    # Set the values.
    my $function = Cdk::checkReq ($name, "Function", $params{'Function'});
-   Cdk::Dialog::PostProcess ($self->{'Me'}, $params{'Function'});
+   Cdk::Buttonbox::PostProcess ($self->{'Me'}, $params{'Function'});
 }
 
 #
@@ -205,7 +204,7 @@ sub postProcess
 sub raise
 {
    my $self	= shift;
-   Cdk::Dialog::Raise ($self->{'Me'});
+   Cdk::Buttonbox::Raise ($self->{'Me'});
 }
 
 #
@@ -214,7 +213,7 @@ sub raise
 sub lower
 {
    my $self	= shift;
-   Cdk::Dialog::Lower ($self->{'Me'});
+   Cdk::Buttonbox::Lower ($self->{'Me'});
 }
 
 #
@@ -223,7 +222,7 @@ sub lower
 sub register
 {
    my $self	= shift;
-   Cdk::Dialog::Register ($self->{'Me'});
+   Cdk::Buttonbox::Register ($self->{'Me'});
 }
 
 #
@@ -232,7 +231,7 @@ sub register
 sub unregister
 {
    my $self	= shift;
-   Cdk::Dialog::Unregister ($self->{'Me'});
+   Cdk::Buttonbox::Unregister ($self->{'Me'});
 }
 
 #
@@ -241,7 +240,7 @@ sub unregister
 sub getwin
 {
    my $self	= shift;
-   Cdk::Dialog::GetWindow ($self->{'Me'});
+   Cdk::Buttonbox::GetWindow ($self->{'Me'});
 }
 
 1;

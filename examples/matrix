@@ -15,18 +15,19 @@ my @rowtitles = ("Course 1", "Course 2", "Course 3", "Course 4", "Course 5");
 my @coltitles = ("Course", "Lec 1", "Lec 2", "Lec 3", "Flag");
 my @colwidths = (7,5,5,5,1);
 my @coltypes  = ("UMIXED", "UMIXED", "UMIXED", "UMIXED", "UMIXED");
+my $title = ["<C>Course Selection Matrix", "", "<C><#HL(30)>"];
 my $x;
 
 # Create the matrix object.
-my $matrix = new Cdk::Matrix ('Rowtitles' => \@rowtitles,
-				'Coltitles' => \@coltitles,
-				'Colwidths' => \@colwidths,
-				'Coltypes' =>  \@coltypes,
+my $matrix = new Cdk::Matrix ('Title' => $title,
+				'RowTitles' => \@rowtitles,
+				'ColTitles' => \@coltitles,
+				'ColWidths' => \@colwidths,
+				'ColTypes' =>  \@coltypes,
 				'Vrows' => 3, 
 				'Vcols' => $#coltitles+1,
-				'Boxcell' => "TRUE",
-				'Boxmatrix' => "TRUE",
-				'Shadow' => "TRUE");
+				'BoxCell' => "TRUE",
+				'BoxMatrix' => "TRUE");
 
 # Using this array, we will load up the matrix.
 my @matrixValues = (["PSY340Y", "L0101", "L0201", "", ""],

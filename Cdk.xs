@@ -26,7 +26,7 @@ WINDOW *	GCWINDOW	= (WINDOW *)NULL;
 	      for (y=0; y <= subLen; y++)				\
 	      {								\
 	         SV *sv	= *av_fetch(subArray,y,FALSE);			\
-	         (NEWARRAY)[x+(START)][y+(START)]	= copyChar((char *)SvPV(sv,na));	\
+	         (NEWARRAY)[x+(START)][y+(START)] = copyChar((char *)SvPV(sv,na));	\
 	      }								\
 	   }								\
 	   (ARRAYLEN)++;						\
@@ -92,23 +92,95 @@ WINDOW *	GCWINDOW	= (WINDOW *)NULL;
 	   (LEN)++;							\
 	} while (0)
 
+#define	MAKE_TITLE(INPUT,DEST)						\
+	do {								\
+	   if (SvTYPE(SvRV(INPUT)) == SVt_PVAV)				\
+	   {								\
+	      AV *src	= (AV *)SvRV((INPUT));				\
+	      int lines	= 0;						\
+	      int x, len;						\
+									\
+	      len = av_len(src);					\
+									\
+	      for (x=0; x <= len; x++)					\
+	      {								\
+	         SV *foo		= *av_fetch(src, x, FALSE);	\
+	         if (lines == 0)					\
+	         {							\
+	            sprintf ((DEST), "%s", (char *)SvPV(foo,na));	\
+	         }							\
+	         else							\
+	         {							\
+	            sprintf ((DEST), "%s\n%s", (DEST), (char *)SvPV(foo,na));	\
+	         }							\
+	         lines++;						\
+	      }								\
+									\
+	      if (lines == 0)						\
+	      {								\
+	         strcpy ((DEST), "");					\
+	      }								\
+	   }								\
+	   else								\
+	   {								\
+              sprintf ((DEST), "%s", (char *)SvPV(INPUT,na));		\
+	   }								\
+	} while (0)
+
 /*
  * The callback callback to run Perl callback routines. Are you confused???
  */
-void PerlBindCB (EObjectType cdktype, void *object, void *data)
+void PerlBindCB (EObjectType cdktype, void *object, void *data, chtype input)
 {
    dSP ;
-   SV *foo;
 
-   PUSHMARK (sp) ;
+   SV *foo = (SV*)data;
+   int returnValueCount, returnValue, charKey;
+   char *chtypeKey, temp[10];
 
-   foo = (SV*)data;
+   ENTER;
+   SAVETMPS;
+   PUSHMARK (sp);
 
-   perl_call_sv (foo, G_DISCARD|G_NOARGS);
+   /* Check which key input is... */
+   chtypeKey = checkChtypeKey (input);
+   if (chtypeKey == (char *)NULL)
+   {
+      sprintf (temp, "%c", (char)input);
+      XPUSHs (sv_2mortal(newSVpv(temp, 1)));
+   }
+   else
+   {
+      XPUSHs (sv_2mortal(newSVpv(chtypeKey, strlen(chtypeKey))));
+   }
+   PUTBACK ;
+
+   /* Call the perl subroutine. */
+   returnValueCount = perl_call_sv (foo, G_SCALAR);
+
+   SPAGAIN;
+
+   /* Check the number of values returned from this function. */
+   if (returnValueCount == 0)
+   {
+      /* They didn't return anything, let them continue. */
+      PUTBACK;
+      FREETMPS;
+      LEAVE;
+      return;
+   }
+
+   /* They returned something, lets find out what it is. */
+   returnValue = POPi;
+
+   PUTBACK;
+   FREETMPS;
+   LEAVE;
+   return;
 }
 
 /*
- * This callback is for the pre and post process function callbacks.
+ * The callback callback to run Perl callback routines. Are you confused???
  */
 int PerlProcessCB (EObjectType cdktype, void *object, void *data, chtype input)
 {
@@ -122,7 +194,7 @@ int PerlProcessCB (EObjectType cdktype, void *object, void *data, chtype input)
    SAVETMPS;
    PUSHMARK (sp);
 
-   /* Check which key input is...				*/
+   /* Check which key input is... */
    chtypeKey = checkChtypeKey (input);
    if (chtypeKey == (char *)NULL)
    {
@@ -135,28 +207,27 @@ int PerlProcessCB (EObjectType cdktype, void *object, void *data, chtype input)
    }
    PUTBACK ;
 
-   /* Call the perl subroutine.					*/
+   /* Call the perl subroutine. */
    returnValueCount = perl_call_sv (foo, G_SCALAR);
 
    SPAGAIN;
 
-   /* Check the number of values returned from this function.	*/
+   /* Check the number of values returned from this function. */
    if (returnValueCount == 0)
    {
-      /* They didn't return anything, let them continue.	*/
+      /* They didn't return anything, let them continue. */
       PUTBACK;
       FREETMPS;
       LEAVE;
       return 1;
    }
 
-   /* They returned something, lets find out what it is.	*/
+   /* They returned something, lets find out what it is. */
    returnValue = POPi;
 
    PUTBACK;
    FREETMPS;
    LEAVE;
-
    return returnValue;
 }
 
@@ -522,7 +593,7 @@ SV *sv;
       if (strEQ(name, "TAB"))
          return TAB;
 
-      /* Else they used a format of </X> to specify a chtype.	*/
+      /* Else they used a format of </X> to specify a chtype. */
       fillerChtype = char2Chtype (name, &j1, &j2);
       filler = fillerChtype[0];
       freeChtype (fillerChtype);
@@ -629,8 +700,6 @@ SV *sv;
       char *name = SvPV(sv,na);
       if (strEQ(name, "BOTTOM"))
          return BOTTOM;
-      if (strEQ(name, "BOX"))
-         return BOX;
       if (strEQ(name, "CENTER"))
          return CENTER;
       if (strEQ(name, "COL"))
@@ -643,8 +712,6 @@ SV *sv;
          return HORIZONTAL;
       if (strEQ(name, "LEFT"))
          return LEFT;
-      if (strEQ(name, "NOBOX"))
-         return NOBOX;
       if (strEQ(name, "NONE"))
          return NONE;
       if (strEQ(name, "NONUMBERS"))
@@ -771,22 +838,13 @@ init()
 	   GCWINDOW	= initscr();
 	   GCDKSCREEN 	= initCDKScreen (GCWINDOW);
 
-	   /* Start the colors.				*/
+	   /* Start the colors. */
 	   initCDKColor();
 
 	   RETVAL = GCDKSCREEN;
 	}
 	OUTPUT:
 	   RETVAL
-
-chtype
-mixChtype(character,attribute)
-	char	character
-	chtype 	attribute
-	CODE:
-	{
-	   RETVAL = character | attribute;
-	}
 
 long
 getColor(pair)
@@ -796,37 +854,17 @@ getColor(pair)
 	   RETVAL = COLOR_PAIR(pair);
 	}
 
-chtype
-makeChtype (attr1,attr2)
-	chtype	attr1
-	chtype	attr2
-	CODE:
-	{
-	   RETVAL = attr1 | attr2;
-	}
-
-chtype
-makeColorChtype(attribute,pair)
-	chtype 	attribute = sv2chtype ($arg);
-	int	pair
-	CODE:
-	{
-	   chtype color = (chtype)COLOR_PAIR(pair);
-
-	   RETVAL = attribute | color;
-	}
-
 void
 end()
 	CODE:
 	{
-	   /* Kill the main screen.			*/
+	   /* Kill the main screen. */
 	   destroyCDKScreen (GCDKSCREEN);
 
-	   /* Remove the curses window.			*/
+	   /* Remove the curses window. */
 	   delwin (GCWINDOW);
 
-	   /* Shut down curses.				*/
+	   /* Shut down curses. */
 	   endCDK();
 	}
 
@@ -886,7 +924,9 @@ DrawMesg(window,mesg,attrib=A_NORMAL,xpos=CENTER,ypos=CENTER,align=HORIZONTAL)
 	int		align = sv2int ($arg);
 	CODE:
 	{
-	   printattr (window, xpos, ypos, align, attrib, mesg);
+	   int mesgLen = strlen (mesg);
+
+	   writeChar (window, xpos, ypos, mesg, align, 0, mesgLen);
 	}
 
 chtype
@@ -903,54 +943,132 @@ PROTOTYPES: DISABLE
 MODULE	= Cdk	PACKAGE	= Cdk::Label
 
 CDKLABEL *
-New(mesg,xPos=CENTER,yPos=CENTER,Box=TRUE,shadow=FALSE)
+New(mesg,xPos=CENTER,yPos=CENTER,box=TRUE,shadow=FALSE)
 	SV *	mesg
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
-	int	Box = sv2int ($arg);
+	int	box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
-	   CDKLABEL *	labelWidget = (CDKLABEL *)NULL;
-	   char *	Message[MAXLABELROWS];
-	   int	 	mesgLines;
+	   CDKLABEL *	widget = (CDKLABEL *)NULL;
+	   char *	message[MAX_LINES];
+	   int	 	messageLines;
 
 	   checkCdkInit();
 
-	   MAKE_CHAR_ARRAY (0,mesg,Message,mesgLines);
+	   MAKE_CHAR_ARRAY (0,mesg,message,messageLines);
 
-	   labelWidget = newCDKLabel (GCDKSCREEN,xPos,yPos,
-					Message,mesgLines,
-					Box,shadow);
+	   widget = newCDKLabel (GCDKSCREEN,xPos,yPos,
+					message,messageLines,
+					box,shadow);
 
 	   /* Check the return value. */
-	   if (labelWidget == (CDKLABEL *)NULL)
+	   if (widget == (CDKLABEL *)NULL)
 	   {
   	      croak ("Cdk::Label Could not create widget. Is the window too small?\n");
 	   }
 	   else
 	   {
-	      RETVAL = labelWidget;
+	      RETVAL = widget;
 	   }
 	}
 	OUTPUT:
 	   RETVAL
 
 void
-Set(object,mesg,Box=TRUE)
+SetMessage(object,mesg)
 	CDKLABEL *	object
 	SV *		mesg
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   char *	Message[MAXLABELROWS];
-	   int	 	mesgLines;
+	   char *	message[MAX_LINES];
+	   int		messageLines;
 
-	   checkCdkInit();
+	   MAKE_CHAR_ARRAY (0,mesg,message,messageLines);
 
-	   MAKE_CHAR_ARRAY (0,mesg,Message,mesgLines);
+	   setCDKLabelMessage (object,message,messageLines);
+	}
 
-	   setCDKLabel (object,Message,mesgLines,Box);
+void
+SetBox(object,box=TRUE)
+	CDKLABEL *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKLabelBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKLABEL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKLabelBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKLABEL *	object
+	char *		color
+	CODE:
+	{
+	   setCDKLabelBackgroundColor (object,color);
 	}
 
 void
@@ -1034,8 +1152,8 @@ New(message,buttons,xPos=CENTER,yPos=CENTER,highlight=A_REVERSE,seperator=TRUE,B
 	CODE:
 	{
 	   CDKDIALOG *	dialogWidget = (CDKDIALOG *)NULL;
-	   char *	Message[MAXDIALOGROWS];
-	   char *	Buttons[MAXDIALOGBUTTONS];
+	   char *	Message[MAX_DIALOG_ROWS];
+	   char *	Buttons[MAX_DIALOG_BUTTONS];
 	   int 		buttonCount;
 	   int		rowCount;
 	   
@@ -1044,7 +1162,11 @@ New(message,buttons,xPos=CENTER,yPos=CENTER,highlight=A_REVERSE,seperator=TRUE,B
 	   MAKE_CHAR_ARRAY (0,message,Message,rowCount);
 	   MAKE_CHAR_ARRAY (0,buttons,Buttons,buttonCount);
 	   
-	   dialogWidget = newCDKDialog (GCDKSCREEN,xPos,yPos,Message,rowCount,Buttons,buttonCount,highlight,seperator,Box,shadow);
+	   dialogWidget = newCDKDialog (GCDKSCREEN,xPos,yPos,
+					Message,rowCount,
+					Buttons,buttonCount,
+					highlight,seperator,
+					Box,shadow);
 
 	   /* Check the return type. */
 	   if (dialogWidget == (CDKDIALOG *)NULL)
@@ -1113,7 +1235,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vDIALOG, object, key, &PerlBindCB, function);
+	   bindCDKObject (vDIALOG, object, key, PerlBindCB, function);
 	}
 
 int
@@ -1154,14 +1276,102 @@ Erase(object)
 	}
 
 void
-Set(object,highlight=A_REVERSE,seperator=TRUE,Box=TRUE)
+SetHighlight(object,highlight=A_REVERSE)
 	CDKDIALOG *	object
 	chtype		highlight = sv2chtype ($arg);
-	int		seperator = sv2int ($arg);
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   setCDKDialog (object,highlight,seperator,Box);
+	   setCDKDialogHighlight (object,highlight);
+	}
+
+void
+SetSeparator(object,separator=TRUE)
+	CDKDIALOG *	object
+	int		separator
+	CODE:
+	{
+	   setCDKDialogSeparator (object,separator);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKDIALOG *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKDialogBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKDIALOG *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKDialogBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKDIALOG *	object
+	char *		color
+	CODE:
+	{
+	   setCDKDialogBackgroundColor (object,color);
 	}
 
 void
@@ -1207,13 +1417,14 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Scroll
 
 CDKSCROLL *
-New (title,mesg,height,width,xPos=CENTER,yPos=CENTER,numbers=TRUE,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
-	char * 	title
+New (title,mesg,height,width,xPos=CENTER,yPos=CENTER,sPos=RIGHT,numbers=TRUE,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
+	SV * 	title
 	SV *	mesg
 	int	height
 	int	width
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
+	int	sPos = sv2int ($arg);
 	int	numbers	 = sv2int ($arg);
 	chtype	highlight = sv2chtype ($arg);
 	int	Box = sv2int ($arg);
@@ -1221,15 +1432,21 @@ New (title,mesg,height,width,xPos=CENTER,yPos=CENTER,numbers=TRUE,highlight=A_RE
 	CODE:
 	{
 	   CDKSCROLL * scrollWidget = (CDKSCROLL *)NULL;
-	   char *Message[MAXITEMS];
+	   char *Message[MAX_ITEMS];
+	   char Title[1000];
 	   int mesglen;
 
 	   checkCdkInit();
 
 	   MAKE_CHAR_ARRAY(0,mesg,Message,mesglen);
            Message[mesglen] = "";
+	   MAKE_TITLE (title,Title);
 
-	   scrollWidget = newCDKScroll (GCDKSCREEN,xPos,yPos,height,width,title,Message,mesglen,numbers,highlight,Box,shadow);
+	   scrollWidget = newCDKScroll (GCDKSCREEN,xPos,yPos,sPos,
+					height,width,
+					Title,Message,mesglen,
+					numbers,highlight,
+					Box,shadow);
 
 	   /* Check the return type. */
 	   if (scrollWidget == (CDKSCROLL *)NULL)
@@ -1316,7 +1533,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vSCROLL, object, key, &PerlBindCB, function);
+	   bindCDKObject (vSCROLL, object, key, PerlBindCB, function);
 	}
 
 int
@@ -1340,7 +1557,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKSCROLL *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -1369,21 +1586,109 @@ Info(object)
 	}
 
 void
-Set(object,mesg,numbers=FALSE,highlight=A_REVERSE,Box=TRUE)
+SetItems(object,items,numbers=FALSE)
 	CDKSCROLL *	object
-	SV *		mesg
+	SV *		items
 	int		numbers = sv2int ($arg);
-	chtype		highlight = sv2chtype ($arg);
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   char *Message[MAXITEMS];
-	   int mesglen;
+	   char *Items[MAX_ITEMS];
+	   int itemLength;
  
-	   MAKE_CHAR_ARRAY(0,mesg,Message,mesglen);
-	   Message[mesglen] = "";
+	   MAKE_CHAR_ARRAY(0,items,Items,itemLength);
+	   Items[itemLength] = "";
 
-	   setCDKScroll (object,Message,mesglen,numbers,highlight,Box);
+	   setCDKScrollItems (object,Items,itemLength,numbers);
+	}
+
+void
+SetHighlight(object,highlight)
+	CDKSCROLL *	object
+	chtype		highlight = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollHighlight (object,highlight);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKSCROLL *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKScrollBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKSCROLL *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScrollBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKSCROLL *	object
+	char *		color
+	CODE:
+	{
+	   setCDKScrollBackgroundColor (object,color);
 	}
 
 void
@@ -1429,7 +1734,8 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Scale
 
 CDKSCALE *
-New(label,start,low,high,inc,fastinc,fieldwidth,xPos=CENTER,yPos=CENTER,lPos=LEFT,fieldattr=A_NORMAL,Box=TRUE,shadow=FALSE)
+New(title,label,start,low,high,inc,fastinc,fieldwidth,xPos=CENTER,yPos=CENTER,fieldattr=A_NORMAL,Box=TRUE,shadow=FALSE)
+	SV *	title
 	char *	label
 	int	start
 	int	low
@@ -1439,17 +1745,23 @@ New(label,start,low,high,inc,fastinc,fieldwidth,xPos=CENTER,yPos=CENTER,lPos=LEF
 	int	fieldwidth
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
-	int	lPos = sv2int ($arg);
 	chtype	fieldattr = sv2chtype ($arg);
 	int	Box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKSCALE * scaleWidget = (CDKSCALE *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   scaleWidget = newCDKScale (GCDKSCREEN,xPos,yPos,lPos,label,fieldattr,fieldwidth,start,low,high,inc,fastinc,Box,shadow);
+	   MAKE_TITLE (title,Title);
+
+	   scaleWidget = newCDKScale (GCDKSCREEN,xPos,yPos,
+					Title,label,
+					fieldattr,fieldwidth,
+					start,low,high,inc,fastinc,
+					Box,shadow);
 
 	   /* Check the return type. */
 	   if (scaleWidget == (CDKSCALE *)NULL)
@@ -1518,7 +1830,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vSCALE, object, key, &PerlBindCB, function);
+	   bindCDKObject (vSCALE, object, key, PerlBindCB, function);
 	}
 
 int
@@ -1542,7 +1854,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKSCALE *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -1559,15 +1871,103 @@ Erase(object)
 	}
 
 void
-Set(object,low,high,current,Box=TRUE)
+SetValue(object,value)
+	CDKSCALE *	object
+	int		value
+	CODE:
+	{
+	   setCDKScaleValue (object,value);
+	}
+
+void
+SetLowHigh(object,low,high)
 	CDKSCALE *	object
 	int		low
 	int		high
-	int		current
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   setCDKScale (object,low,high,current,Box);
+	   setCDKScaleLowHigh (object,low,high);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKSCALE *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKScaleBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKSCALE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKScaleBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKSCALE *	object
+	char *		color
+	CODE:
+	{
+	   setCDKScaleBackgroundColor (object,color);
 	}
 
 void
@@ -1613,23 +2013,25 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Histogram
 
 CDKHISTOGRAM *
-New(label,height,width,orient=HORIZONTAL,xPos=CENTER,yPos=CENTER,lPos=LEFT,Box=TRUE,shadow=FALSE)
-	char *	label
+New(title,height,width,orient=HORIZONTAL,xPos=CENTER,yPos=CENTER,Box=TRUE,shadow=FALSE)
+	SV *	title
 	int	height
 	int	width
 	int	orient = sv2int ($arg);
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
-	int	lPos = sv2int ($arg);
 	int	Box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKHISTOGRAM * histWidget = (CDKHISTOGRAM *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   histWidget = newCDKHistogram (GCDKSCREEN,xPos,yPos,lPos,height,width,orient,label,Box,shadow);
+	   MAKE_TITLE (title,Title);
+
+	   histWidget = newCDKHistogram (GCDKSCREEN,xPos,yPos,height,width,orient,Title,Box,shadow);
 
 	   /* Check the return type. */
 	   if (histWidget == (CDKHISTOGRAM *)NULL)
@@ -1645,35 +2047,147 @@ New(label,height,width,orient=HORIZONTAL,xPos=CENTER,yPos=CENTER,lPos=LEFT,Box=T
 	   RETVAL
 
 void
-Set(object,low,high,value,filler=".",sType="vPERCENT",statsPos=TOP,statsAttr=A_REVERSE,Box=BOX)
+SetDisplayType(object,value="vPERCENT")
 	CDKHISTOGRAM *		object
-	int			low
-	int			high
-	int			value
-	chtype			filler = sv2chtype ($arg);
-	char *			sType
-	int			statsPos = sv2int ($arg);
-	chtype			statsAttr = sv2chtype ($arg);
-	int			Box = sv2int ($arg);
+	char *			value
 	CODE:
 	{
-	   EHistogramDisplayType statsType = vPERCENT;
+	   EHistogramDisplayType displayType = vPERCENT;
 
 	   /* Set the stats type.		*/
-	   if (strEQ (sType, "PERCENT"))
-	      statsType = vPERCENT;
-	   if (strEQ (sType, "FRACTION"))
-	      statsType = vFRACTION;
-	   if (strEQ (sType, "REAL"))
-	      statsType = vREAL;
-	   if (strEQ (sType, "NONE"))
-	      statsType = vNONE;
+	   if (strEQ (value, "PERCENT"))
+	      displayType = vPERCENT;
+	   if (strEQ (value, "FRACTION"))
+	      displayType = vFRACTION;
+	   if (strEQ (value, "REAL"))
+	      displayType = vREAL;
+	   if (strEQ (value, "NONE"))
+	      displayType = vNONE;
 
-	   setCDKHistogram (object,statsType,statsPos,statsAttr,low,high,value,filler,Box);
+	   setCDKHistogramDisplayType (object,displayType);
 	}
 
 void
-Draw(object,Box=BOX)
+SetValue(object,value,low,high)
+	CDKHISTOGRAM *	object
+	int 		value
+	int 		low
+	int 		high
+	CODE:
+	{
+	   setCDKHistogramValue (object,value,low,high);
+	}
+
+void
+SetFillerChar(object,value)
+	CDKHISTOGRAM *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramFillerChar (object,value);
+	}
+
+void
+SetStatsPos(object,value)
+	CDKHISTOGRAM *	object
+	int 		value = sv2int ($arg);
+	CODE:
+	{
+	   setCDKHistogramStatsPos (object,value);
+	}
+
+void
+SetStatsAttr(object,value)
+	CDKHISTOGRAM *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramStatsAttr (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKHISTOGRAM *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKHistogramBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKHISTOGRAM *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKHistogramBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKHISTOGRAM *	object
+	char *		color
+	CODE:
+	{
+	   setCDKHistogramBackgroundColor (object,color);
+	}
+
+void
+Draw(object,Box=TRUE)
 	CDKHISTOGRAM *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -1741,9 +2255,9 @@ New(menulist,menuloc,titleattr=A_REVERSE,subtitleattr=A_REVERSE,menuPos=TOP)
 	CODE:
 	{
 	   CDKMENU * menuWidget = (CDKMENU *)NULL;
-	   char *menuList[MAXMENUITEMS][MAXSUBITEMS];
-	   int	subSize[MAXSUBITEMS];
-	   int	menuLoc[MAXMENUITEMS];
+	   char *menuList[MAX_MENU_ITEMS][MAX_SUB_ITEMS];
+	   int	subSize[MAX_SUB_ITEMS];
+	   int	menuLoc[MAX_MENU_ITEMS];
 	   int	menuItems;
 	   int 	menulen, loclen;
 	   int	x;
@@ -1818,7 +2332,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vMENU, object, key, &PerlBindCB, function);
+	   bindCDKObject (vMENU, object, key, PerlBindCB, function);
 	}
 
 int
@@ -1858,15 +2372,40 @@ Erase(object)
 	}
 
 void
-Set(object,menuitem,submenuitem,titleattr,subtitleattr)
+SetCurrentItem(object,menuitem,submenuitem)
 	CDKMENU *	object
 	int		menuitem
 	int		submenuitem
-	chtype		titleattr = sv2chtype ($arg);
-	chtype		subtitleattr = sv2chtype ($arg);
 	CODE:
 	{
-	   setCDKMenu(object,menuitem,submenuitem,titleattr,subtitleattr);
+	   setCDKMenuCurrentItem(object,menuitem,submenuitem);
+	}
+
+void
+SetTitleHighlight(object,value)
+	CDKMENU *	object
+	chtype 		value
+	CODE:
+	{
+	   setCDKMenuTitleHighlight (object,value);
+	}
+
+void
+SetSubTitleHighlight(object,value)
+	CDKMENU *	object
+	chtype 		value
+	CODE:
+	{
+	   setCDKMenuSubTitleHighlight (object,value);
+	}
+
+void
+SetBackgroundColor(object,value)
+	CDKMENU *	object
+	char *		value
+	CODE:
+	{
+	   setCDKMenuBackgroundColor (object,value);
 	}
 
 void
@@ -1904,7 +2443,8 @@ Lower(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Entry
 
 CDKENTRY *
-New(label,min,max,fieldWidth,filler=".",disptype=vMIXED,xPos=CENTER,yPos=CENTER,lPos=LEFT,fieldattr=A_NORMAL,Box=TRUE,shadow=FALSE)
+New(title,label,min,max,fieldWidth,filler=".",disptype=vMIXED,xPos=CENTER,yPos=CENTER,fieldattr=A_NORMAL,Box=TRUE,shadow=FALSE)
+	SV *		title
 	char *		label
 	int		min
 	int		max
@@ -1913,17 +2453,23 @@ New(label,min,max,fieldWidth,filler=".",disptype=vMIXED,xPos=CENTER,yPos=CENTER,
 	EDisplayType	disptype = sv2dtype ($arg);
 	int		xPos = sv2int ($arg);
 	int		yPos = sv2int ($arg);
-	int		lPos = sv2int ($arg);
 	chtype		fieldattr = sv2chtype ($arg);
 	int		Box = sv2int ($arg);
 	int		shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKENTRY * entryWidget = (CDKENTRY *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   entryWidget = newCDKEntry (GCDKSCREEN,xPos,yPos,lPos,label,fieldattr,filler,disptype,fieldWidth,min,max,Box,shadow);
+	   MAKE_TITLE (title,Title);
+
+	   entryWidget = newCDKEntry (GCDKSCREEN,xPos,yPos,
+					Title,label,
+					fieldattr,filler,disptype,
+					fieldWidth,min,max,
+					Box,shadow);
 
 	   /* Check the return type. */
 	   if (entryWidget == (CDKENTRY *)NULL)
@@ -1992,7 +2538,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv(functionRef);
-	   bindCDKObject (vENTRY, object, key, &PerlBindCB, function);
+	   bindCDKObject (vENTRY, object, key, PerlBindCB, function);
 	}
 
 int
@@ -2016,7 +2562,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKENTRY *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -2033,27 +2579,129 @@ Erase(object)
 	}
 
 void
-Set(object,value,minValue,maxValue,Box)
+SetValue(object,value)
 	CDKENTRY *	object
 	char *		value
-	int		minValue
-	int		maxValue
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   int min	= minValue;
-	   int max	= maxValue;
+	   setCDKEntryValue (object, value);
+	}
 
-	   if (minValue < 0)
-           {
-	      min = object->min;
-           }
-	   if (maxValue < 0)
-           {
-	      max = object->max;
-           }
+void
+SetMin(object,value)
+	CDKENTRY *	object
+	int 		value
+	CODE:
+	{
+	   setCDKEntryMin (object, value);
+	}
 
-	   setCDKEntry (object,value,min,max,Box);
+void
+SetMax(object,value)
+	CDKENTRY *	object
+	int 		value
+	CODE:
+	{
+	   setCDKEntryMax (object, value);
+	}
+
+void
+SetFillerChar(object,value)
+	CDKENTRY *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryFillerChar (object, value);
+	}
+
+void
+SetHiddenChar(object,value)
+	CDKENTRY *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryHiddenChar (object, value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKENTRY *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKEntryBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKEntryBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKENTRY *	object
+	char *		color
+	CODE:
+	{
+	   setCDKEntryBackgroundColor (object,color);
 	}
 
 char *
@@ -2115,7 +2763,8 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Mentry
 
 CDKMENTRY *
-New(label,min,physical,logical,fieldWidth,disptype=vMIXED,filler=".",xPos=CENTER,yPos=CENTER,lPos=LEFT,fieldattr=A_NORMAL,Box=TRUE,shadow=FALSE)
+New(title,label,min,physical,logical,fieldWidth,disptype=vMIXED,filler=".",xPos=CENTER,yPos=CENTER,fieldattr=A_NORMAL,Box=TRUE,shadow=FALSE)
+	SV *		title
 	char *		label
 	int		min
 	int		physical
@@ -2125,17 +2774,22 @@ New(label,min,physical,logical,fieldWidth,disptype=vMIXED,filler=".",xPos=CENTER
 	chtype		filler = sv2chtype ($arg);
 	int		xPos = sv2int ($arg);
 	int		yPos = sv2int ($arg);
-	int		lPos = sv2int ($arg);
 	chtype		fieldattr = sv2chtype ($arg);
 	int		Box = sv2int ($arg);
 	int		shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKMENTRY * mentryWidget = (CDKMENTRY *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   mentryWidget = newCDKMentry (GCDKSCREEN,xPos,yPos,lPos,label,fieldattr,filler,disptype,fieldWidth,physical,logical,min,Box,shadow);
+	   mentryWidget = newCDKMentry (GCDKSCREEN,xPos,yPos,
+					Title,label,
+					fieldattr,filler,
+					disptype,fieldWidth,
+					physical,logical,min,
+					Box,shadow);
 
 	   /* Check the return type. */
 	   if (mentryWidget == (CDKMENTRY *)NULL)
@@ -2205,7 +2859,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vMENTRY, object, key, &PerlBindCB, function);
+	   bindCDKObject (vMENTRY, object, key, PerlBindCB, function);
 	}
 
 int
@@ -2229,7 +2883,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKMENTRY *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -2246,21 +2900,118 @@ Erase(object)
 	}
 
 void
-Set(object,value,minValue,box)
+SetValue(object,value)
 	CDKMENTRY *	object
 	char *		value
-	int		minValue
-	int		box = sv2int ($arg);
 	CODE:
 	{
-	   int min	= minValue;
+	   setCDKMentryValue (object,value);
+	}
 
-	   if (minValue < 0)
+void
+SetMin(object,value)
+	CDKMENTRY *	object
+	int		value
+	CODE:
+	{
+	   int min = value;
+
+	   if (value < 0)
 	   {
 	      min = object->min;
 	   }
 
-	   setCDKMentry (object,value,min,box);
+	   setCDKMentryMin (object,min);
+	}
+
+void
+SetFillerChar(object,value)
+	CDKMENTRY *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryFillerChar (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKMENTRY *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKMentryBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKMENTRY *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMentryBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKMENTRY *	object
+	char *		color
+	CODE:
+	{
+	   setCDKMentryBackgroundColor (object,color);
 	}
 
 char *
@@ -2322,11 +3073,12 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Matrix
 
 CDKMATRIX *
-New(rowtitles,coltitles,colwidths,colvalues,vrows,vcols,xPos=CENTER,yPos=CENTER,rowspace=1,colspace=1,filler=".",dominant=NONE,boxMatrix=FALSE,boxCell=TRUE,shadow=FALSE)
+New(title,rowtitles,coltitles,colwidths,coltypes,vrows,vcols,xPos=CENTER,yPos=CENTER,rowspace=1,colspace=1,filler=".",dominant=NONE,boxMatrix=FALSE,boxCell=TRUE,shadow=FALSE)
+	SV *	title
 	SV *	rowtitles
 	SV *	coltitles
 	SV *	colwidths
-	SV *	colvalues
+	SV *	coltypes
 	int	vrows
 	int	vcols
 	int	xPos = sv2int ($arg);
@@ -2341,22 +3093,23 @@ New(rowtitles,coltitles,colwidths,colvalues,vrows,vcols,xPos=CENTER,yPos=CENTER,
 	CODE:
 	{
 	   CDKMATRIX * matrixWidget = (CDKMATRIX *)NULL;
-	   char	*colTitles[MAXMATRIXCOLS+1];
-	   char *rowTitles[MAXMATRIXROWS+1];
-	   int	colWidths[MAXMATRIXCOLS+1];
-	   int	colValues[MAXMATRIXCOLS+1];
+	   char	*colTitles[MAX_MATRIX_COLS+1];
+	   char *rowTitles[MAX_MATRIX_ROWS+1];
+	   int	colWidths[MAX_MATRIX_COLS+1];
+	   int	colTypes[MAX_MATRIX_COLS+1];
 	   int	rows, cols, widths, dtype, x;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   /* Make the arrays.					*/
+	   /* Make the arrays. */
 	   MAKE_CHAR_ARRAY (1,rowtitles,rowTitles,rows);
 	   MAKE_CHAR_ARRAY (1,coltitles,colTitles,cols);
 	   MAKE_INT_ARRAY (1,colwidths,colWidths,widths);
-	   MAKE_DTYPE_ARRAY (1,colvalues,colValues,dtype);
+	   MAKE_DTYPE_ARRAY (1,coltypes,colTypes,dtype);
+	   MAKE_TITLE (title,Title);
 
-
-	   /* Now check them...					*/
+	   /* Now check them... */
 	   if (cols != widths)
 	   {
 	      croak ("Cdk::Matrix The col title array size is not the same as the widths array size.");
@@ -2370,13 +3123,14 @@ New(rowtitles,coltitles,colwidths,colvalues,vrows,vcols,xPos=CENTER,yPos=CENTER,
 	      croak ("Cdk::Matrix The virtual matrix size is larger then the physical size.");
 	   }
 
-	   /* OK, everything is ok. Lets make the matrix.	*/
+	   /* OK, everything is ok. Lets make the matrix. */
 	   matrixWidget = newCDKMatrix (GCDKSCREEN,
 						xPos, yPos,
-						rows, cols, vrows, vcols,
-						rowTitles, 
+						rows, cols,
+						vrows, vcols,
+						Title, rowTitles, 
 						colTitles,
-						colWidths, colValues,
+						colWidths, colTypes,
 						rowspace, colspace, filler,
 						dominant,
 						boxMatrix, boxCell, shadow);
@@ -2400,8 +3154,8 @@ Activate(object,...)
 	PPCODE:
 	{
 	   AV *cellInfo	= newAV();
-	   char *info[MAXMATRIXROWS][MAXMATRIXCOLS];
-	   int subSize[MAXMATRIXROWS];
+	   char *info[MAX_MATRIX_ROWS][MAX_MATRIX_COLS];
+	   int subSize[MAX_MATRIX_ROWS];
 	   int x, y, value, arrayLen, matrixlen;
 	   chtype Keys[300];
 
@@ -2466,7 +3220,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vMATRIX, object, key, &PerlBindCB, function);
+	   bindCDKObject (vMATRIX, object, key, PerlBindCB, function);
 	}
 
 int
@@ -2499,7 +3253,7 @@ GetDim(object)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKMATRIX *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -2521,13 +3275,96 @@ Set(object,info)
 	SV *		info
 	CODE:
 	{
-	   char *	Info[MAXMATRIXROWS][MAXMATRIXCOLS];
-	   int		subSize[MAXMATRIXROWS];
+	   char *	Info[MAX_MATRIX_ROWS][MAX_MATRIX_COLS];
+	   int		subSize[MAX_MATRIX_ROWS];
 	   int		matrixlen;
 
 	   MAKE_CHAR_MATRIX (1,info,Info,subSize,matrixlen);
 
 	   setCDKMatrix (object,Info,matrixlen,subSize);
+	}
+
+void
+SetCell(object,row,col,value)
+	CDKMATRIX *	object
+	int		row
+	int		col
+	char *		value
+	CODE:
+	{
+	   setCDKMatrixCell (object,row,col,value);
+	}
+
+void
+SetBoxAttribute(object,box=TRUE)
+	CDKMATRIX *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKMatrixBoxAttribute (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKMATRIX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMatrixULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKMATRIX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMatrixURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKMATRIX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMatrixLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKMATRIX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMatrixLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKMATRIX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMatrixVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKMATRIX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMatrixHorizontalChar (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKMATRIX *	object
+	char *		color
+	CODE:
+	{
+	   setCDKMatrixBackgroundColor (object,color);
 	}
 
 void
@@ -2581,10 +3418,11 @@ Unregister(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Marquee
 
 CDKMARQUEE *
-New(width,xPos=CENTER,yPos=CENTER,shadow=FALSE)
+New(width,xPos=CENTER,yPos=CENTER,box=TRUE,shadow=FALSE)
 	int	width
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
+	int	box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
@@ -2592,7 +3430,7 @@ New(width,xPos=CENTER,yPos=CENTER,shadow=FALSE)
 
 	   checkCdkInit();
 
-	   marqueeWidget = newCDKMarquee (GCDKSCREEN,xPos,yPos,width,shadow);
+	   marqueeWidget = newCDKMarquee (GCDKSCREEN,xPos,yPos,width,box,shadow);
 
 	   /* Check the return type. */
 	   if (marqueeWidget == (CDKMARQUEE *)NULL)
@@ -2608,18 +3446,98 @@ New(width,xPos=CENTER,yPos=CENTER,shadow=FALSE)
 	   RETVAL
 
 int
-Activate(marquee,message,delay,repeat,Box=TRUE)
-	CDKMARQUEE *	marquee
+Activate(object,message,delay,repeat,Box=TRUE)
+	CDKMARQUEE *	object
 	char *		message
 	int		delay
 	int		repeat
 	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   RETVAL = activateCDKMarquee (marquee,message,delay,repeat,Box);
+	   RETVAL = activateCDKMarquee (object,message,delay,repeat,Box);
 	}
 	OUTPUT:
 	   RETVAL
+
+void
+Deactivate(object)
+	CDKMARQUEE *	object
+	CODE:
+	{
+	   deactivateCDKMarquee (object);
+	}
+
+void
+SetBoxAttribute(object,box=TRUE)
+	CDKMARQUEE *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKMarqueeBoxAttribute (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKMARQUEE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMarqueeULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKMARQUEE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMarqueeURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKMARQUEE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMarqueeLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKMARQUEE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMarqueeLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKMARQUEE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMarqueeVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKMARQUEE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKMarqueeHorizontalChar (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKMARQUEE *	object
+	char *		color
+	CODE:
+	{
+	   setCDKMarqueeBackgroundColor (object,color);
+	}
 
 void
 Bind(object,key,functionRef)
@@ -2629,11 +3547,11 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vMARQUEE, object, key, &PerlBindCB, function);
+	   bindCDKObject (vMARQUEE, object, key, PerlBindCB, function);
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKMARQUEE *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -2692,29 +3610,35 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Selection
 
 CDKSELECTION *
-New(title,list,choices,height,width,xPos=CENTER,yPos=CENTER,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
-	char *	title
+New(title,list,choices,height,width,xPos=CENTER,yPos=CENTER,sPos=RIGHT,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
+	SV *	title
 	SV *	list
 	SV *	choices
 	int	height
 	int	width
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
+	int	sPos = sv2int ($arg);
 	chtype	highlight = sv2chtype ($arg);
 	int	Box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKSELECTION * selectionWidget = (CDKSELECTION *)NULL;
-	   char *List[MAXITEMS], *Choices[MAXITEMS];
+	   char *List[MAX_ITEMS], *Choices[MAX_ITEMS], Title[1000];
 	   int listSize, choiceSize;
 
 	   checkCdkInit();
 
 	   MAKE_CHAR_ARRAY(0,list,List,listSize);
 	   MAKE_CHAR_ARRAY(0,choices,Choices,choiceSize);
+	   MAKE_TITLE (title,Title);
 
-	   selectionWidget = newCDKSelection (GCDKSCREEN,xPos,yPos,height,width,title,List,listSize,Choices,choiceSize,highlight,Box,shadow);
+	   selectionWidget = newCDKSelection (GCDKSCREEN,xPos,yPos,sPos,
+						height,width,
+						Title,List,listSize,
+						Choices,choiceSize,
+						highlight,Box,shadow);
 
 	   /* Check the return type. */
 	   if (selectionWidget == (CDKSELECTION *)NULL)
@@ -2786,7 +3710,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vSELECTION, object, key, &PerlBindCB, function);
+	   bindCDKObject (vSELECTION, object, key, PerlBindCB, function);
 	}
 
 int
@@ -2810,7 +3734,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKSELECTION *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -2827,19 +3751,141 @@ Erase(object)
 	}
 
 void
-Set(object,defaultList,highlight,Box)
+SetHighlight(object,highlight)
 	CDKSELECTION *	object
-	SV *		defaultList
 	chtype		highlight = sv2chtype ($arg);
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   int defaultChoices[MAXCHOICES];
-	   int choicelen;
+	   setCDKSelectionHighlight (object,highlight);
+	}
 
-	   MAKE_INT_ARRAY (0,defaultList,defaultChoices,choicelen);
+void
+SetChoices(object,choices)
+	CDKSELECTION *	object
+	SV *		choices
+	CODE:
+	{
+	   int defaultChoices[MAX_CHOICES];
+	   int choiceLength;
 
-	   setCDKSelection (object,highlight,defaultChoices,Box);
+	   MAKE_INT_ARRAY (0,choices,defaultChoices,choiceLength);
+
+	   setCDKSelectionChoices (object,defaultChoices);
+	}
+
+void
+SetChoice(object,choice,index)
+	CDKSELECTION *	object
+	int		choice
+	int		index
+	CODE:
+	{
+	   setCDKSelectionChoice (object,index,choice);
+	}
+
+void
+SetModes(object,modes)
+	CDKSELECTION *	object
+	SV *		modes
+	CODE:
+	{
+	   int Modes[MAX_CHOICES];
+	   int modeLength;
+
+	   MAKE_INT_ARRAY (0,modes,Modes,modeLength);
+
+	   setCDKSelectionModes (object,Modes);
+	}
+
+void
+SetMode(object,mode,index)
+	CDKSELECTION *	object
+	int		mode
+	int		index
+	CODE:
+	{
+	   setCDKSelectionMode (object,index,mode);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKSELECTION *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKSelectionBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKSELECTION *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSelectionBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKSELECTION *	object
+	char *		color
+	CODE:
+	{
+	   setCDKSelectionBackgroundColor (object,color);
 	}
 
 void
@@ -2897,14 +3943,17 @@ New(buttons,height,width,buttonHighlight=A_REVERSE,xpos=CENTER,ypos=CENTER,Box=T
 	CODE:
 	{
 	   CDKVIEWER * viewerWidget = (CDKVIEWER *)NULL;
-	   char *Buttons[MAXBUTTONS];
+	   char *Buttons[MAX_BUTTONS];
 	   int buttonCount;
 
 	   checkCdkInit();
 
 	   MAKE_CHAR_ARRAY (0,buttons,Buttons,buttonCount);
 
-	   viewerWidget = newCDKViewer (GCDKSCREEN,xpos,ypos,height,width,Buttons,buttonCount,buttonHighlight,Box,shadow);
+	   viewerWidget = newCDKViewer (GCDKSCREEN,xpos,ypos,
+					height,width,
+					Buttons,buttonCount,
+					buttonHighlight,Box,shadow);
 
 	   /* Check the return type. */
 	   if (viewerWidget == (CDKVIEWER *)NULL)
@@ -2924,7 +3973,7 @@ Activate(object)
 	CDKVIEWER *	object
 	CODE:
 	{
-	   int value = activateCDKViewer (object);
+	   int value = activateCDKViewer (object, (chtype *)NULL);
 
 	   if (object->exitType == vEARLY_EXIT ||
 	       object->exitType == vESCAPE_HIT)
@@ -2937,22 +3986,127 @@ Activate(object)
 	   RETVAL
 
 void
-Set(object,title,info,buttonHighlight=A_REVERSE,attrInterp=TRUE,Box=BOX)
+SetInfo(object,info,interpret=TRUE)
 	CDKVIEWER *	object
-	char *		title
 	SV *		info
-	chtype		buttonHighlight = sv2chtype ($arg);
-	int		attrInterp = sv2int ($arg);
-	int		Box = sv2int ($arg);
+	int		interpret = sv2int ($arg);
 	CODE:
 	{
-	   char *Info[MAXLINES];
+	   char *Info[MAX_LINES];
 	   int infolen;
 
 	   MAKE_CHAR_ARRAY(0,info, Info, infolen);
            Info[infolen] = "";
 
-	   setCDKViewer (object,title,Info,infolen,buttonHighlight,attrInterp,Box);
+	   setCDKViewerInfo (object,Info,infolen,interpret);
+	}
+
+void
+SetTitle(object,value)
+	CDKVIEWER *	object
+	char *		value
+	CODE:
+	{
+	   setCDKViewerTitle (object,value);
+	}
+
+void
+SetHighlight(object,value)
+	CDKVIEWER *	object
+	chtype 		value
+	CODE:
+	{
+	   setCDKViewerHighlight (object,value);
+	}
+
+void
+SetInfoLine(object,value)
+	CDKVIEWER *	object
+	int 		value
+	CODE:
+	{
+	   setCDKViewerInfoLine (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKVIEWER *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKViewerBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKVIEWER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKViewerBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKVIEWER *	object
+	char *		color
+	CODE:
+	{
+	   setCDKViewerBackgroundColor (object,color);
 	}
 
 void
@@ -2963,31 +4117,11 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vVIEWER, object, key, &PerlBindCB, function);
-	}
-
-int
-PreProcess(object,functionRef)
-	CDKVIEWER *	object
-	SV *		functionRef
-	CODE:
-	{
-	   SV *function = newSVsv (functionRef);
-	   setCDKViewerPreProcess (object, PerlProcessCB, function);
-	}
-
-int
-PostProcess(object,functionRef)
-	CDKVIEWER *	object
-	SV *		functionRef
-	CODE:
-	{
-	   SV *function = newSVsv (functionRef);
-	   setCDKViewerPostProcess (object, PerlProcessCB, function);
+	   bindCDKObject (vVIEWER, object, key, PerlBindCB, function);
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKVIEWER *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -3047,7 +4181,7 @@ MODULE	= Cdk	PACKAGE	= Cdk::Graph
 
 CDKGRAPH *
 New(title,xtitle,ytitle,height,width,xpos=CENTER,ypos=CENTER)
-	char *	title
+	SV *	title
 	char *	xtitle
 	char *	ytitle
 	int	height
@@ -3057,8 +4191,13 @@ New(title,xtitle,ytitle,height,width,xpos=CENTER,ypos=CENTER)
 	CODE:
 	{
 	   CDKGRAPH * graphWidget = (CDKGRAPH *)NULL;
+	   char Title[1000];
 
-	   graphWidget = newCDKGraph (GCDKSCREEN,xpos,ypos,height,width,title,xtitle,ytitle);
+	   checkCdkInit();
+
+	   MAKE_TITLE (title,Title);
+
+	   graphWidget = newCDKGraph (GCDKSCREEN,xpos,ypos,height,width,Title,xtitle,ytitle);
 
 	   /* Check the return type. */
 	   if (graphWidget == (CDKGRAPH *)NULL)
@@ -3074,32 +4213,130 @@ New(title,xtitle,ytitle,height,width,xpos=CENTER,ypos=CENTER)
 	   RETVAL
 
 int
-Set(object,values,graphchar,startAtZero=TRUE,pType="LINE")
+SetValues(object,values,startAtZero=TRUE)
 	CDKGRAPH *		object
 	SV *			values
-	char *			graphchar
 	int			startAtZero = sv2int ($arg);
-	char *			pType
 	CODE:
 	{
-	   EGraphDisplayType plotType = vLINE;
-           int 	Values[MAXLINES];
+           int 	Values[MAX_LINES];
            int 	valueCount;
 
 	   MAKE_INT_ARRAY (0,values,Values,valueCount);
-           valueCount--;
 	   
-	   /* Check the plot type.		*/
-	   if (strEQ (pType, "PLOT"))
-	      plotType = vPLOT;
-
-           RETVAL = setCDKGraph (object,Values,valueCount,graphchar,startAtZero,plotType);
+           RETVAL = setCDKGraphValues (object,Values,valueCount,startAtZero);
 	}
 	OUTPUT:
 	   RETVAL
 
 void
-Draw(object,Box=BOX)
+SetCharacters(object,value)
+	CDKGRAPH *	object
+	char *		value
+	CODE:
+	{
+	   setCDKGraphCharacters (object,value);
+	}
+
+void
+SetDisplayType(object,value)
+	CDKGRAPH *	object
+	char *		value
+	CODE:
+	{
+	   EGraphDisplayType displayType = vLINE;
+
+	   if (strEQ (value, "PLOT"))
+	   {
+	      displayType = vPLOT;
+	   }
+
+	   setCDKGraphDisplayType (object,displayType);
+	}
+
+void
+SetBox(object,box=FALSE)
+	CDKGRAPH *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKGraphBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKGRAPH *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKGraphBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKGRAPH *	object
+	char *		color
+	CODE:
+	{
+	   setCDKGraphBackgroundColor (object,color);
+	}
+
+void
+Draw(object,Box=FALSE)
         CDKGRAPH *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -3158,13 +4395,14 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Radio
 
 CDKRADIO *
-New(title,list,height,width,xpos=CENTER,ypos=CENTER,choice="X",defaultItem=0,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
-	char *	title
+New(title,list,height,width,xPos=CENTER,yPos=CENTER,sPos=RIGHT,choice="X",defaultItem=0,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
+	SV *	title
 	SV *	list
 	int	height
 	int	width
-	int	xpos = sv2int ($arg);
-	int	ypos = sv2int ($arg);
+	int	xPos = sv2int ($arg);
+	int	yPos = sv2int ($arg);
+	int	sPos = sv2int ($arg);
 	chtype	choice = sv2chtype ($arg);
 	int	defaultItem
 	chtype	highlight = sv2chtype ($arg);
@@ -3173,13 +4411,20 @@ New(title,list,height,width,xpos=CENTER,ypos=CENTER,choice="X",defaultItem=0,hig
 	CODE:
 	{
 	   CDKRADIO * radioWidget = (CDKRADIO *)NULL;
-	   char *List[MAXITEMS];
+	   char *List[MAX_ITEMS];
+	   char Title[1000];
 	   int listlen;
 
 	   MAKE_CHAR_ARRAY(0,list,List,listlen);
            List[listlen] = "";
 
-	   radioWidget = newCDKRadio (GCDKSCREEN,xpos,ypos,height,width,title,List,listlen,choice,defaultItem,highlight,Box,shadow);
+	   MAKE_TITLE (title,Title);
+
+	   radioWidget = newCDKRadio (GCDKSCREEN,xPos,yPos,sPos,
+					height,width,Title,
+					List,listlen,
+					choice,defaultItem,
+					highlight,Box,shadow);
 
 	   /* Check the return type. */
 	   if (radioWidget == (CDKRADIO *)NULL)
@@ -3248,7 +4493,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vRADIO, object, key, &PerlBindCB, function);
+	   bindCDKObject (vRADIO, object, key, PerlBindCB, function);
 	}
 
 int
@@ -3272,7 +4517,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKRADIO *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -3289,14 +4534,120 @@ Erase(object)
 	}
 
 void
-Set(object,highlight,choice,Box=TRUE)
+SetHighlight(object,highlight)
 	CDKRADIO *	object
 	chtype		highlight = sv2chtype ($arg);
-	chtype		choice = sv2chtype ($arg);
-	int		Box = sv2int ($arg);
 	CODE:
 	{
-	   setCDKRadio (object,highlight,choice,Box);
+	   setCDKRadioHighlight (object,highlight);
+	}
+
+void
+SetChoiceCharacter(object,value)
+	CDKRADIO *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioChoiceCharacter (object,value);
+	}
+
+void
+SetLeftBrace(object,value)
+	CDKRADIO *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioLeftBrace (object,value);
+	}
+
+void
+SetRightBrace(object,value)
+	CDKRADIO *	object
+	chtype 		value = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioRightBrace (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKRADIO *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKRadioBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKRADIO *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKRadioBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKRADIO *	object
+	char *		color
+	CODE:
+	{
+	   setCDKRadioBackgroundColor (object,color);
 	}
 
 void
@@ -3342,22 +4693,28 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Template
 
 CDKTEMPLATE *
-New(label,plate,overlay,xpos=CENTER,ypos=CENTER,lpos=LEFT,Box=TRUE,shadow=FALSE)
+New(title,label,plate,overlay,xpos=CENTER,ypos=CENTER,Box=TRUE,shadow=FALSE)
+	SV *	title
 	char *	label
 	char *	plate
 	char *	overlay
 	int	xpos = sv2int ($arg);
 	int	ypos = sv2int ($arg);
-	int	lpos = sv2int ($arg);
 	int	Box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKTEMPLATE * templateWidget = (CDKTEMPLATE *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   templateWidget = newCDKTemplate (GCDKSCREEN,xpos,ypos,lpos,label,plate,overlay,Box,shadow);
+	   MAKE_TITLE (title,Title);
+
+	   templateWidget = newCDKTemplate (GCDKSCREEN,xpos,ypos,
+						Title,label,
+						plate,overlay,
+						Box,shadow);
 
 	   /* Check the return type. */
 	   if (templateWidget == (CDKTEMPLATE *)NULL)
@@ -3427,7 +4784,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vTEMPLATE, object, key, &PerlBindCB, function);
+	   bindCDKObject (vTEMPLATE, object, key, PerlBindCB, function);
 	}
 
 int
@@ -3461,7 +4818,7 @@ Mix(object)
 	   RETVAL
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKTEMPLATE *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -3478,13 +4835,102 @@ Erase(object)
 	}
 
 void
-Set(object,value,box)
+SetValue(object,value)
 	CDKTEMPLATE *	object
 	char *		value
+	CODE:
+	{
+	   setCDKTemplateValue (object,value);
+	}
+
+void
+SetMin(object,value)
+	CDKTEMPLATE *	object
+	int		value
+	CODE:
+	{
+	   setCDKTemplateMin (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKTEMPLATE *	object
 	int		box = sv2int ($arg);
 	CODE:
 	{
-	   setCDKTemplate (object,value,box);
+	   setCDKTemplateBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKTEMPLATE *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKTemplateBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKTEMPLATE *	object
+	char *		color
+	CODE:
+	{
+	   setCDKTemplateBackgroundColor (object,color);
 	}
 
 char *
@@ -3546,7 +4992,7 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Swindow
 CDKSWINDOW *
 New(title,savelines,height,width,xpos=CENTER,ypos=CENTER,box=TRUE,shadow=FALSE)
-	char *	title
+	SV *	title
 	int	savelines
 	int	height
 	int	width
@@ -3557,8 +5003,14 @@ New(title,savelines,height,width,xpos=CENTER,ypos=CENTER,box=TRUE,shadow=FALSE)
 	CODE:
 	{
 	   CDKSWINDOW * swindowWidget = (CDKSWINDOW *)NULL;
+	   char Title[1000];
 
-	   swindowWidget = newCDKSwindow (GCDKSCREEN,xpos,ypos,height,width,title,savelines,box,shadow);
+	   MAKE_TITLE (title, Title);
+
+	   swindowWidget = newCDKSwindow (GCDKSCREEN,xpos,ypos,
+						height,width,
+						Title,savelines,
+						box,shadow);
 
 	   /* Check the return type. */
 	   if (swindowWidget == (CDKSWINDOW *)NULL)
@@ -3616,7 +5068,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vSWINDOW, object, key, &PerlBindCB, function);
+	   bindCDKObject (vSWINDOW, object, key, PerlBindCB, function);
 	}
 
 int
@@ -3640,22 +5092,99 @@ PostProcess(object,functionRef)
 	}
 
 void
-Set(object,info,lines,box)
+SetContents(object,info)
 	CDKSWINDOW *	object
 	SV *		info
-	int		lines
-	int		box = sv2int ($arg);
 	CODE:
 	{
-	   char *Loginfo[MAXITEMS];
+	   char *Loginfo[MAX_ITEMS];
 	   int infolen;
- 
-	   checkCdkInit();
  
 	   MAKE_CHAR_ARRAY(0,info,Loginfo,infolen);
 	   Loginfo[infolen] = "";
 
-	   setCDKSwindow (object, Loginfo, infolen, box);
+	   setCDKSwindowContents (object,Loginfo,infolen);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKSWINDOW *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKSwindowBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKSWINDOW *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSwindowBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKSWINDOW *	object
+	char *		color
+	CODE:
+	{
+	   setCDKSwindowBackgroundColor (object,color);
 	}
 
 void
@@ -3736,7 +5265,7 @@ Dump(object,filename)
 	   RETVAL
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKSWINDOW *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -3802,26 +5331,31 @@ GetWindow(object)
 
 MODULE	= Cdk	PACKAGE	= Cdk::Itemlist
 CDKITEMLIST *
-New(label,itemlist,defaultItem=0,xpos=CENTER,ypos=CENTER,lpos=LEFT,box=TRUE,shadow=FALSE)
+New(title,label,itemlist,defaultItem=0,xpos=CENTER,ypos=CENTER,box=TRUE,shadow=FALSE)
+	SV *	title
 	char *	label
 	SV *	itemlist
 	int	defaultItem
 	int	xpos = sv2int ($arg);
 	int	ypos = sv2int ($arg);
-	int	lpos = sv2int ($arg);
 	int	box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
 	   CDKITEMLIST * itemlistWidget = (CDKITEMLIST *)NULL;
-	   char *       Itemlist[MAXLABELROWS];
+	   char		Title[1000];
+	   char *       Itemlist[MAX_LINES];
 	   int          itemLength;
  
 	   checkCdkInit();
  
 	   MAKE_CHAR_ARRAY (0,itemlist,Itemlist,itemLength);
+	   MAKE_TITLE (title,Title);
 
-	   itemlistWidget = newCDKItemlist (GCDKSCREEN,xpos,ypos,lpos,label,Itemlist,itemLength,defaultItem,box,shadow);
+	   itemlistWidget = newCDKItemlist (GCDKSCREEN,xpos,ypos,
+						Title,label,
+						Itemlist,itemLength,
+						defaultItem,box,shadow);
 
 	   /* Check the return type. */
 	   if (itemlistWidget == (CDKITEMLIST *)NULL)
@@ -3890,7 +5424,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vITEMLIST, object, key, &PerlBindCB, function);
+	   bindCDKObject (vITEMLIST, object, key, PerlBindCB, function);
 	}
 
 int
@@ -3914,21 +5448,116 @@ PostProcess(object,functionRef)
 	}
 
 void
-Set(object,info,defaultItem,box)
+SetValues(object,values)
 	CDKITEMLIST *	object
-	SV *		info
-	int		defaultItem
+	SV *		values
+	CODE:
+	{
+	   char *Values[MAX_ITEMS];
+	   int valueLength;
+ 
+	   MAKE_CHAR_ARRAY(0,values,Values,valueLength);
+
+	   setCDKItemlistValues (object,Values,valueLength,object->defaultItem);
+	}
+
+void
+SetDefaultItem(object,value)
+	CDKITEMLIST *	object
+	int 		value
+	CODE:
+	{
+	   setCDKItemlistDefaultItem (object,value);
+	}
+
+void
+SetCurrentItem(object,value)
+	CDKITEMLIST *	object
+	int 		value
+	CODE:
+	{
+	   setCDKItemlistCurrentItem (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKITEMLIST *	object
 	int		box = sv2int ($arg);
 	CODE:
 	{
-	   char *infoList[MAXITEMS];
-	   int infolen;
- 
-	   checkCdkInit();
- 
-	   MAKE_CHAR_ARRAY(0,info,infoList,infolen);
+	   setCDKItemlistBox (object,box);
+	}
 
-	   setCDKItemlist (object,infoList,infolen,defaultItem,box);
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKITEMLIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKItemlistBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKITEMLIST *	object
+	char *		color
+	CODE:
+	{
+	   setCDKItemlistBackgroundColor (object,color);
 	}
 
 char *
@@ -3940,7 +5569,7 @@ Get(object)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKITEMLIST *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -3998,7 +5627,8 @@ GetWindow(object)
 
 MODULE	= Cdk	PACKAGE	= Cdk::Fselect
 CDKFSELECT *
-New(label,height,width,dAttrib="</N>",fAttrib="</N>",lAttrib="</N>",sAttrib="</N>",highlight="</R>",fieldAttribute=A_NORMAL,filler=".",xPos=CENTER,yPos=CENTER,box=TRUE,shadow=FALSE)
+New(title,label,height,width,dAttrib="</N>",fAttrib="</N>",lAttrib="</N>",sAttrib="</N>",highlight="</R>",fieldAttribute=A_NORMAL,filler=".",xPos=CENTER,yPos=CENTER,box=TRUE,shadow=FALSE)
+	SV *	title
 	char *	label
 	int	height
 	int	width
@@ -4016,11 +5646,15 @@ New(label,height,width,dAttrib="</N>",fAttrib="</N>",lAttrib="</N>",sAttrib="</N
 	CODE:
 	{
 	   CDKFSELECT * fselectWidget = (CDKFSELECT *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
+	   MAKE_TITLE (title,Title);
+
 	   fselectWidget = newCDKFselect (GCDKSCREEN,xPos,yPos,
-						height,width,label,
+						height,width,
+						Title,label,
 						fieldAttribute,filler,highlight,
 						dAttrib,fAttrib,lAttrib,sAttrib,
 						box,shadow);
@@ -4086,23 +5720,147 @@ Inject(object,key)
 	   RETVAL
 
 void
-Set(object,directory,dAttrib="</N>",fAttrib="</N>",lAttrib="</N>",sAttrib="</N>",highlight=A_REVERSE,fieldAttribute=A_NORMAL,filler='.',box=TRUE)
-	CDKFSELECT*	object
-	char * 		directory
-	char * 		dAttrib
-	char * 		fAttrib
-	char * 		lAttrib
-	char * 		sAttrib
-	chtype		highlight = sv2chtype ($arg);
-	chtype		fieldAttribute = sv2chtype ($arg);
-	chtype		filler = sv2chtype ($arg);
+SetDirectory(object,value)
+	CDKFSELECT *	object
+	char *		value
+	CODE:
+	{
+	   setCDKFselectDirectory (object,value);
+	}
+
+void
+SetFillerChar(object,value)
+	CDKFSELECT *	object
+	chtype		value
+	CODE:
+	{
+	   setCDKFselectFillerChar (object,value);
+	}
+
+void
+SetHighlight(object,value)
+	CDKFSELECT *	object
+	chtype 		value
+	CODE:
+	{
+	   setCDKFselectHighlight (object,value);
+	}
+
+void
+SetDirAttribute(object,value)
+	CDKFSELECT *	object
+	char *		value
+	CODE:
+	{
+	   setCDKFselectDirAttribute (object,value);
+	}
+
+void
+SetLinkAttribute(object,value)
+	CDKFSELECT *	object
+	char *		value
+	CODE:
+	{
+	   setCDKFselectLinkAttribute (object,value);
+	}
+
+void
+SetFileAttribute(object,value)
+	CDKFSELECT *	object
+	char *		value
+	CODE:
+	{
+	   setCDKFselectFileAttribute (object,value);
+	}
+
+void
+SetSocketkAttribute(object,value)
+	CDKFSELECT *	object
+	char *		value
+	CODE:
+	{
+	   setCDKFselectSocketAttribute (object,value);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKFSELECT *	object
 	int		box = sv2int ($arg);
 	CODE:
 	{
-	   setCDKFselect (object,directory,
-				fieldAttribute,filler,highlight,
-				dAttrib,fAttrib,lAttrib,sAttrib,
-				box);
+	   setCDKFselectBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKFSELECT *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKFselectBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKFSELECT *	object
+	char *		color
+	CODE:
+	{
+	   setCDKFselectBackgroundColor (object,color);
 	}
 
 void
@@ -4113,7 +5871,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vFSELECT, object, key, &PerlBindCB, function);
+	   bindCDKObject (vFSELECT, object, key, PerlBindCB, function);
 	}
 
 int
@@ -4137,7 +5895,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKFSELECT *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -4195,7 +5953,8 @@ GetWindow(object)
 
 MODULE	= Cdk	PACKAGE	= Cdk::Slider
 CDKSLIDER *
-New(label,start,low,high,inc,fastInc,fieldWidth,xPos,yPos,lPos,filler,Box,shadow)
+New(title,label,start,low,high,inc,fastInc,fieldWidth,xPos,yPos,filler,Box,shadow)
+	SV *	title
 	char *	label
 	int	start
 	int	low
@@ -4205,20 +5964,25 @@ New(label,start,low,high,inc,fastInc,fieldWidth,xPos,yPos,lPos,filler,Box,shadow
 	int	fieldWidth
 	int	xPos = sv2int ($arg);
 	int	yPos = sv2int ($arg);
-	int	lPos = sv2int ($arg);
 	chtype	filler = sv2chtype ($arg);
 	int	Box = sv2int ($arg);
 	int	shadow = sv2int ($arg);
 	CODE:
 	{
-	   CDKSLIDER * sliderWidget	= (CDKSLIDER *)NULL;
+	   CDKSLIDER * sliderWidget = (CDKSLIDER *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
+	   MAKE_TITLE (title,Title);
+
 	   sliderWidget = newCDKSlider (GCDKSCREEN,
-					xPos,yPos,lPos,
-					label,filler,fieldWidth,
-					start,low,high,inc,fastInc,Box,shadow);
+					xPos,yPos,
+					Title, label,
+					filler,fieldWidth,
+					start,low,high,
+					inc,fastInc,
+					Box,shadow);
 
 	   /* Check the return type. */
 	   if (sliderWidget == (CDKSLIDER *)NULL)
@@ -4281,15 +6045,103 @@ Inject(object,key)
 	   RETVAL
 
 void
-Set(object,low,high,value,box)
+SetValue(object,value)
 	CDKSLIDER*	object
+	int		value
+	CODE:
+	{
+	   setCDKSliderValue (object,value);
+	}
+
+void
+SetLowHigh(object,low,high)
+	CDKSLIDER *	object
 	int		low
 	int		high
-	int		value
+	CODE:
+	{
+	   setCDKSliderLowHigh (object,low,high);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKSLIDER *	object
 	int		box = sv2int ($arg);
 	CODE:
 	{
-	   setCDKSlider (object,low,high,value,box);
+	   setCDKSliderBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKSLIDER *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKSliderBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKSLIDER *	object
+	char *		color
+	CODE:
+	{
+	   setCDKSliderBackgroundColor (object,color);
 	}
 
 void
@@ -4300,7 +6152,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vSLIDER, object, key, &PerlBindCB, function);
+	   bindCDKObject (vSLIDER, object, key, PerlBindCB, function);
 	}
 
 int
@@ -4324,7 +6176,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKSLIDER *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -4382,7 +6234,8 @@ GetWindow(object)
 
 MODULE	= Cdk	PACKAGE	= Cdk::Alphalist
 CDKALPHALIST *
-New(label,list,height,width,xPos,yPos,highlight,filler,box,shadow)
+New(title,label,list,height,width,xPos,yPos,highlight,filler,box,shadow)
+	SV *	title
 	char *	label
 	SV *	list
 	int	height
@@ -4396,7 +6249,8 @@ New(label,list,height,width,xPos,yPos,highlight,filler,box,shadow)
 	CODE:
 	{
 	   CDKALPHALIST * alphalistWidget = (CDKALPHALIST *)NULL;
-	   char *List[MAXITEMS];
+	   char *List[MAX_ITEMS];
+	   char Title[1000];
 	   int listSize;
 
 	   checkCdkInit();
@@ -4404,10 +6258,14 @@ New(label,list,height,width,xPos,yPos,highlight,filler,box,shadow)
 	   MAKE_CHAR_ARRAY(0,list,List,listSize);
            List[listSize] = "";
 
+	   MAKE_TITLE(title,Title);
+
 	   alphalistWidget = newCDKAlphalist (GCDKSCREEN,xPos,yPos,
 						height,width,
-						label,List,listSize,
-						filler,highlight,box,shadow);
+						Title,label,
+						List,listSize,
+						filler,highlight,
+						box,shadow);
 
 	   /* Check the return type. */
 	   if (alphalistWidget == (CDKALPHALIST *)NULL)
@@ -4468,21 +6326,117 @@ Inject(object,key)
 	   RETVAL
 
 void
-Set(object,list,filler,highlight,box)
+SetContents(object,list)
 	CDKALPHALIST*	object
 	SV *		list
-	chtype		filler = sv2chtype ($arg);
-	chtype		highlight = sv2chtype ($arg);
-	int		box = sv2int ($arg);
 	CODE:
 	{
-	   char *List[MAXITEMS];
+	   char *List[MAX_ITEMS];
 	   int listSize;
 
 	   MAKE_CHAR_ARRAY(0,list,List,listSize);
            List[listSize] = "";
 
-	   setCDKAlphalist (object, List, listSize, filler, highlight, box);
+	   setCDKAlphalistContents (object, List, listSize);
+	}
+
+void
+SetFillerChar(object,fille)
+	CDKALPHALIST*	object
+	chtype  filler = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistFillerChar (object,filler);
+	}
+
+void
+SetHighlight(object,highlight)
+	CDKALPHALIST*	object
+	chtype  filler = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistHighlight (object,filler);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKALPHALIST *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKAlphalistBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKALPHALIST *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKAlphalistBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKALPHALIST *	object
+	char *		color
+	CODE:
+	{
+	   setCDKAlphalistBackgroundColor (object,color);
 	}
 
 char *
@@ -4503,7 +6457,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vALPHALIST, object, key, &PerlBindCB, function);
+	   bindCDKObject (vALPHALIST, object, key, PerlBindCB, function);
 	}
 
 int
@@ -4527,7 +6481,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
 	CDKALPHALIST *	object
 	int		Box = sv2int ($arg);
 	CODE:
@@ -4586,7 +6540,8 @@ GetWindow(object)
 MODULE	= Cdk	PACKAGE	= Cdk::Calendar
 
 CDKCALENDAR *
-New(day,month,year,dayAttrib,monthAttrib,yearAttrib,highlight,xPos=CENTER,yPos=CENTER,Box=TRUE,shadow=FALSE)
+New(title,day,month,year,dayAttrib,monthAttrib,yearAttrib,highlight,xPos=CENTER,yPos=CENTER,Box=TRUE,shadow=FALSE)
+	SV *	title
 	int	day
 	int	month
 	int	year
@@ -4601,10 +6556,16 @@ New(day,month,year,dayAttrib,monthAttrib,yearAttrib,highlight,xPos=CENTER,yPos=C
 	CODE:
 	{
 	   CDKCALENDAR * calendarWidget = (CDKCALENDAR *)NULL;
+	   char Title[1000];
 
 	   checkCdkInit();
 
-	   calendarWidget = newCDKCalendar (GCDKSCREEN,xPos,yPos,day,month,year,dayAttrib,monthAttrib,yearAttrib,highlight,Box,shadow);
+	   MAKE_TITLE (title,Title);
+
+	   calendarWidget = newCDKCalendar (GCDKSCREEN,xPos,yPos,Title,
+						day,month,year,
+						dayAttrib,monthAttrib,yearAttrib,
+						highlight,Box,shadow);
 
 	   /* Check the return type. */
 	   if (calendarWidget == (CDKCALENDAR *)NULL)
@@ -4678,6 +6639,16 @@ SetDate(object,day,month,year)
 	}
 
 void
+GetDate(object)
+	CDKCALENDAR *	object
+	PPCODE:
+	{
+	   XPUSHs (sv_2mortal(newSViv(object->day)));
+	   XPUSHs (sv_2mortal(newSViv(object->month)));
+	   XPUSHs (sv_2mortal(newSViv(object->year)));
+	}
+
+void
 SetMarker(object,day,month,year,marker)
 	CDKCALENDAR *	object
 	int		day
@@ -4701,6 +6672,15 @@ RemoveMarker(object,day,month,year)
 	}
 
 void
+SetDayAttribute(object,attribute)
+	CDKCALENDAR *	object
+	chtype		attribute = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKCalendarDayAttribute (object, attribute);
+	}
+
+void
 Bind(object,key,functionRef)
 	CDKCALENDAR *	object
 	chtype		key = sv2chtype ($arg);
@@ -4708,7 +6688,7 @@ Bind(object,key,functionRef)
 	CODE:
 	{
 	   SV *function = newSVsv (functionRef);
-	   bindCDKObject (vCALENDAR, object, key, &PerlBindCB, function);
+	   bindCDKObject (vCALENDAR, object, key, PerlBindCB, function);
 	}
 
 int
@@ -4732,7 +6712,7 @@ PostProcess(object,functionRef)
 	}
 
 void
-Draw(object,Box=BOX)
+Draw(object,Box=TRUE)
         CDKCALENDAR *	object
         int		Box = sv2int ($arg);
         CODE:
@@ -4804,13 +6784,275 @@ GetWindow(object)
 	   RETVAL = object->win;
 	}
 
-MODULE	= Cdk	PACKAGE	= Cdk::Diag
-void
-DumpScreenRegList(mesg)
-	char *	mesg
+MODULE	= Cdk	PACKAGE	= Cdk::Buttonbox
+
+CDKBUTTONBOX *
+New(title,buttons,rows,cols,height,width,xPos=CENTER,yPos=CENTER,highlight=A_REVERSE,Box=TRUE,shadow=FALSE)
+	SV *	title
+	SV *	buttons
+	int	rows
+	int	cols
+	int	height
+	int	width
+	int	xPos = sv2int ($arg);
+	int	yPos = sv2int ($arg);
+	chtype	highlight = sv2chtype ($arg);
+	int	Box = sv2int ($arg);
+	int	shadow = sv2int ($arg);
 	CODE:
 	{
-	   debugCDKScreen (GCDKSCREEN, mesg);
+	   CDKBUTTONBOX *	widget = (CDKBUTTONBOX *)NULL;
+	   char *		Buttons[MAX_BUTTONS];
+	   char 		Title[1000];
+	   int 			buttonCount;
+	   int			rowCount;
+	   
+	   checkCdkInit();
+
+	   MAKE_CHAR_ARRAY (0,buttons,Buttons,buttonCount);
+	   MAKE_TITLE (title,Title);
+	   
+	   widget = newCDKButtonbox (GCDKSCREEN,xPos,yPos,
+					height,width,Title,
+					rows,cols,
+					Buttons,buttonCount,
+					highlight,Box,shadow);
+
+	   /* Check the return type. */
+	   if (widget == (CDKBUTTONBOX *)NULL)
+	   {
+	      croak ("Cdk::Buttonbox Could not create widget. Is the window too small?\n");
+	   }
+	   else
+	   {
+	      RETVAL = widget;
+	   }
+	}
+	OUTPUT:
+	   RETVAL
+
+int
+Activate(object,...)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   chtype Keys[300];
+	   int arrayLen;
+	   int value;
+
+	   if (items > 1)
+	   {
+	      MAKE_CHTYPE_ARRAY(0,ST(1),Keys,arrayLen);
+
+	      value = activateCDKButtonbox (object, Keys);
+	   }
+	   else
+	   {
+	      value = activateCDKButtonbox (object, NULL);
+	   }
+
+	   if (object->exitType == vEARLY_EXIT ||
+	       object->exitType == vESCAPE_HIT)
+	   {
+              XSRETURN_UNDEF;
+ 	   }
+	   RETVAL = value;
+	}
+	OUTPUT:
+	   RETVAL
+
+int
+Inject(object,key)
+	CDKBUTTONBOX *	object
+	chtype		key = sv2chtype ($arg);
+	CODE:
+	{
+	   int selection = injectCDKButtonbox (object,key);
+	   if (selection == -1)
+	   {
+	      XSRETURN_UNDEF;
+	   }
+	   RETVAL = selection;
+	}
+	OUTPUT:
+	   RETVAL
+
+void
+Bind(object,key,functionRef)
+	CDKBUTTONBOX *	object
+	chtype		key = sv2chtype ($arg);
+	SV *		functionRef
+	CODE:
+	{
+	   SV *function = newSVsv (functionRef);
+	   bindCDKObject (vBUTTONBOX, object, key, PerlBindCB, function);
+	}
+
+int
+PreProcess(object,functionRef)
+	CDKBUTTONBOX *	object
+	SV *		functionRef
+	CODE:
+	{
+	   SV *function = newSVsv (functionRef);
+	   setCDKButtonboxPreProcess (object, PerlProcessCB, function);
+	}
+
+int
+PostProcess(object,functionRef)
+	CDKBUTTONBOX *	object
+	SV *		functionRef
+	CODE:
+	{
+	   SV *function = newSVsv (functionRef);
+	   setCDKButtonboxPostProcess (object, PerlProcessCB, function);
+	}
+
+void
+Draw(object,Box=TRUE)
+        CDKBUTTONBOX *	object
+        int		Box = sv2int ($arg);
+        CODE:
+        {
+           drawCDKButtonbox (object,Box);
+        }
+
+void
+Erase(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   eraseCDKButtonbox (object);
+	}
+
+void
+SetHighlight(object,highlight=A_REVERSE)
+	CDKBUTTONBOX *	object
+	chtype		highlight = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxHighlight (object,highlight);
+	}
+
+void
+SetBox(object,box=TRUE)
+	CDKBUTTONBOX *	object
+	int		box = sv2int ($arg);
+	CODE:
+	{
+	   setCDKButtonboxBox (object,box);
+	}
+
+void
+SetULChar(object,character=ACS_ULCORNER)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxULChar (object,character);
+	}
+
+void
+SetURChar(object,character=ACS_URCORNER)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxURChar (object,character);
+	}
+
+void
+SetLLChar(object,character=ACS_LLCORNER)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxLLChar (object,character);
+	}
+
+void
+SetLRChar(object,character=ACS_LRCORNER)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxLRChar (object,character);
+	}
+
+void
+SetVerticalChar(object,character=ACS_VLINE)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxVerticalChar (object,character);
+	}
+
+void
+SetHorizontalChar(object,character=ACS_HLINE)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxHorizontalChar (object,character);
+	}
+
+void
+SetBoxAttribute(object,character=ACS_HLINE)
+	CDKBUTTONBOX *	object
+	chtype		character = sv2chtype ($arg);
+	CODE:
+	{
+	   setCDKButtonboxBoxAttribute (object,character);
+	}
+
+void
+SetBackgroundColor(object,color)
+	CDKBUTTONBOX *	object
+	char *		color
+	CODE:
+	{
+	   setCDKButtonboxBackgroundColor (object,color);
+	}
+
+void
+Register(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   registerCDKObject (GCDKSCREEN, vBUTTONBOX, object);
+	}
+
+void
+Unregister(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   unregisterCDKObject (vBUTTONBOX, object);
+	}
+
+void
+Raise(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   raiseCDKObject (vBUTTONBOX, object);
+	}
+
+void
+Lower(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   lowerCDKObject (vBUTTONBOX, object);
+	}
+
+WINDOW *
+GetWindow(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   RETVAL = object->win;
 	}
 
 MODULE	= Cdk	PACKAGE	= CDKLABELPtr	PREFIX	= cdk_
@@ -4820,6 +7062,15 @@ cdk_DESTROY(object)
 	CODE:
 	{
 	   destroyCDKLabel (object);
+	}
+
+MODULE	= Cdk	PACKAGE	= CDKBUTTONBOXPtr	PREFIX	= cdk_
+void
+cdk_DESTROY(object)
+	CDKBUTTONBOX *	object
+	CODE:
+	{
+	   destroyCDKButtonbox (object);
 	}
 
 MODULE	= Cdk	PACKAGE	= CDKDIALOGPtr	PREFIX	= cdk_

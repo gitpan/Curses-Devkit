@@ -16,11 +16,13 @@ Cdk::init();
 		"Item 7", "Item 8", "Item 9");
 
 # Create the scrolling list object.
-my $scroll = new Cdk::Scroll ('Title' => "<C></U/5>Scroll Title",
-				'Height' => 6,
-				'Width' => 15,
+my $scroll = new Cdk::Scroll ('Title' => "<C>Scroll Title",
+				'Height' => -10,
+				'Width' => -10,
 				'Numbers' => "TRUE",
+				'Spos' => "RIGHT",
 				'List' => \@listItems);
+$scroll->add ('Item' => "HELLO");
 
 # Activate the scrolling list.
 my $itemPicked = $scroll->activate ();

@@ -16,45 +16,89 @@ sub new
    $self->{'Type'}	= $type;
    
    # Set up the parameters passed in.
-   my $label = Cdk::checkReq ($name, "Label", $params{'Label'});
-   my $height = Cdk::checkReq ($name, "Height", $params{'Height'});
-   my $width = Cdk::checkReq ($name, "Width", $params{'Width'});
-   my $orient = Cdk::checkReq ($name, "Orient", $params{'Orient'});
-   my $xpos = Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
-   my $ypos = Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
-   my $lpos = Cdk::checkDef ($name, "Lpos", $params{'Lpos'}, "LEFT");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
-   my $shadow = Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
+   my $height	= Cdk::checkReq ($name, "Height", $params{'Height'});
+   my $width	= Cdk::checkReq ($name, "Width", $params{'Width'});
+   my $orient	= Cdk::checkReq ($name, "Orient", $params{'Orient'});
+   my $title	= Cdk::checkDef ($name, "Title", $params{'Title'}, "");
+   my $xpos	= Cdk::checkDef ($name, "Xpos", $params{'Xpos'}, "CENTER");
+   my $ypos	= Cdk::checkDef ($name, "Ypos", $params{'Ypos'}, "CENTER");
+   my $box	= Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
+   my $shadow	= Cdk::checkDef ($name, "Shadow", $params{'Shadow'}, "FALSE");
 
    # Create the thing.
-   $self->{'Me'} = Cdk::Histogram::New ($label, $height, $width, $orient,
-					$xpos, $ypos, $lpos, $box, $shadow);
-   bless  $self;
+   $self->{'Me'} = Cdk::Histogram::New ($title, $height, $width, $orient,
+					$xpos, $ypos, $box, $shadow);
+   bless $self;
 }
 
 #
-# This sets the values of the histogram.
+# This sets several parameters of the widget.
 #
 sub set
 {
-   my $self		= shift;
-   my %params		= @_;
-   my $name		= "$self->{'Type'}::set";
+   my $self	= shift;
+   my %params	= @_;
+   my $name	= "$self->{'Type'}::set";
 
-   # Set up the parameters passed in.
-   my $low = Cdk::checkReq ($name, "Low", $params{'Low'});
-   my $high = Cdk::checkReq ($name, "High", $params{'High'});
-   my $value = Cdk::checkReq ($name, "Value", $params{'Value'});
-   my $filler = Cdk::checkDef ($name, "Filler", $params{'Filler'}, " ");
-   my $statstype = Cdk::checkDef ($name, "Statstype", $params{'Statstype'}, "PERCENT");
-   my $spos = Cdk::checkDef ($name, "Statspos", $params{'Statspos'}, "TOP");
-   my $sattr = Cdk::checkDef ($name, "Sattrib", $params{'Sattrib'}, "A_BOLD");
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
-
-   # Store the information in both the object and Perl's stack.
-   Cdk::Histogram::Set ($self->{'Me'},
-				$low, $high, $value,
-				$filler, $statstype, $spos, $sattr, $box);
+   #
+   # Check the parameters sent in.
+   #
+   if (defined $params{'Value'})
+   {
+      Cdk::Histogram::SetValue ($self->{'Me'}, $params{'Low'}, $params{'High'}, $params{'Value'});
+   }
+   if (defined $params{'DisplayType'})
+   {
+      Cdk::Histogram::SetDisplayType ($self->{'Me'}, $params{'DisplayType'});
+   }
+   if (defined $params{'FillerChar'})
+   {
+      Cdk::Histogram::SetFillerChar ($self->{'Me'}, $params{'FillerChar'});
+   }
+   if (defined $params{'StatsPos'})
+   {
+      Cdk::Histogram::SetStatsPos ($self->{'Me'}, $params{'StatsPos'});
+   }
+   if (defined $params{'StatsAttr'})
+   {
+      Cdk::Histogram::SetStatsAttr ($self->{'Me'}, $params{'StatsAttr'});
+   }
+   if (defined $params{'ULChar'})
+   {
+      Cdk::Histogram::SetULChar ($self->{'Me'}, $params{'ULChar'});
+   }
+   if (defined $params{'URChar'})
+   {
+      Cdk::Histogram::SetURChar ($self->{'Me'}, $params{'URChar'});
+   }
+   if (defined $params{'LLChar'})
+   {
+      Cdk::Histogram::SetLLChar ($self->{'Me'}, $params{'LLChar'});
+   }
+   if (defined $params{'LRChar'})
+   {
+      Cdk::Histogram::SetLRChar ($self->{'Me'}, $params{'LRChar'});
+   }
+   if (defined $params{'VChar'})
+   {
+      Cdk::Histogram::SetVerticalChar ($self->{'Me'}, $params{'VChar'});
+   }
+   if (defined $params{'HChar'})
+   {
+      Cdk::Histogram::SetHorizontalChar ($self->{'Me'}, $params{'HChar'});
+   }
+   if (defined $params{'BoxAttribute'})
+   {
+      Cdk::Histogram::SetBoxAttribute ($self->{'Me'}, $params{'BoxAttribute'});
+   }
+   if (defined $params{'BGColor'})
+   {
+      Cdk::Histogram::SetBackgroundColor ($self->{'Me'}, $params{'BGColor'});
+   }
+   if (defined $params{'Box'})
+   {
+      Cdk::Histogram::SetBox ($self->{'Me'}, $params{'Box'});
+   }
 }
 
 #
@@ -67,7 +111,7 @@ sub draw
    my $name	= "$self->{'Type'}::draw";
 
    # Set up the parameters passed in.
-   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "BOX");
+   my $box = Cdk::checkDef ($name, "Box", $params{'Box'}, "TRUE");
    
    # Draw the object.
    Cdk::Histogram::Draw ($self->{'Me'}, $box);

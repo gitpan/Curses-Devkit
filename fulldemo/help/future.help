@@ -6,15 +6,6 @@ of things to come:
      This would allow Cdk to run commands and trap the output.
 <B=*>I am presently working on creating a tree widget.
 
-</R>Specific<!R>
-   </U>Selection<!U>
-<B=*>Need to add parameter so user can pass in a list of default settings.
-
-   </U>Graph<!U>
-<B=*>Would like to add a flag in the parameter list to make the graph turn 
-     from a bar graph to a line graph. Could also use this as a set-able 
-     field for dynamic switching.
-
 </R>New Features/Widgets<!R>
 <B=*>Possible Editor to place widgets...
 <B=*>Full range of drawing routines.

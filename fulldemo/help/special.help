@@ -9,6 +9,7 @@ display attributes available through Cdk, and how to turn them on.
 
 <C><#UL><#HL(7)><#TT><#HL(10)><#UR>
 <C><#VL></U>Command <#VL> Attribute <!U><#VL>
+<C><#VL>\<\/N>    <#VL> </N>Normal<!N>    <#VL>
 <C><#VL>\<\/B>    <#VL> </B>Bold<!B>      <#VL>
 <C><#VL>\<\/R>    <#VL> </R>Reverse<!R>   <#VL>
 <C><#VL>\<\/U>    <#VL> </U>Underline<!U> <#VL>

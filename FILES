@@ -7,6 +7,7 @@ extension.
 examples Directory	Description
 ------------------------------------------------------------------------------
 alphalist		Demonstrates the alphalist widget.
+buttonbox		Demonstrates the buttonbox widget.
 bind			Demonstrates how to use the bind function.
 calendar		Demonstrates the calendar widget.
 dialog			Demonstrates the dialog widget.
@@ -38,4 +39,4 @@ async			Demonstrates how to manipulate defined widgets
 perlbug			Rips off Larry's utils/perlbug program.
 pkgInfo			Basic Solaris package install/remove program.
 pwdInfo			Basic password file browser.
-rolodex			Comprehensive phone number rolodex.
+rolodex			Comprehensive personal rolodex.
